@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTA VI — Обратный отсчёт</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+    :root {
+      --vice-blue:   #1a1aff;
+      --vice-purple: #b400ff;
+      --vice-pink:   #ff2d95;
+      --vice-orange: #ff7a00;
+      --vice-yellow: #ffcc00;
+      --bg-dark:     #050510;
+      --card-bg:     rgba(255, 255, 255, 0.04);
+      --card-border: rgba(255, 45, 149, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Мягкое неоновое свечение фона */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(180, 0, 255, 0.15), transparent 50%),
+        radial-gradient(circle at 80% 60%, rgba(255, 45, 149, 0.12), transparent 50%),
+        radial-gradient(circle at 50% 100%, rgba(255, 122, 0, 0.1), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ---------- ОСНОВНОЙ КОНТЕЙНЕР (ТАЙМЕР) ---------- */
+    .countdown-section {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 40px 20px 20px;
+      width: 100%;
+    }
+
+    .gta-title {
+      font-size: clamp(1.2rem, 3.5vw, 2.6rem);
+      letter-spacing: 0.12em;
+      color: #fff;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 0.3em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .vi-block {
+      position: relative;
+      display: inline-block;
+      line-height: 1;
+      margin: 0 auto;
+    }
+
+    .vi-text {
+      display: block;
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(6rem, min(26vw, 38vh), 16rem);
+      line-height: 0.78;
+      letter-spacing: -0.04em;
+      padding: 0.02em 0.08em;
+      background: linear-gradient(
+        180deg,
+        var(--vice-blue)   0%,
+        var(--vice-purple) 30%,
+        var(--vice-pink)   60%,
+        var(--vice-orange) 85%,
+        var(--vice-yellow) 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-stroke: 0.025em #fff;
+      filter: drop-shadow(0 0 30px rgba(255, 45, 149, 0.45));
+      transform: scaleY(0.9);
+      transform-origin: center;
+    }
+
+    .vi-block::before,
+    .vi-block::after {
+      content: '';
+      position: absolute;
+      bottom: 8%;
+      width: 14%;
+      height: 55%;
+      background: rgba(5, 5, 16, 0.55);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Cpath d='M50 200 Q45 120 30 60 Q25 40 10 20 Q30 30 50 70 Q70 30 90 20 Q75 40 70 60 Q55 120 50 200 Z'/%3E%3C/svg%3E") no-repeat center / contain;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Cpath d='M50 200 Q45 120 30 60 Q25 40 10 20 Q30 30 50 70 Q70 30 90 20 Q75 40 70 60 Q55 120 50 200 Z'/%3E%3C/svg%3E") no-repeat center / contain;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .vi-block::before { left: 12%; transform: scaleX(-1); }
+    .vi-block::after  { right: 12%; }
+
+    .timer {
+      display: flex;
+      gap: clamp(10px, 2.5vw, 30px);
+      justify-content: center;
+      margin-top: clamp(1.2rem, 3.5vh, 2.5rem);
+      flex-wrap: wrap;
+    }
+
+    .time-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: clamp(60px, 12vw, 110px);
+    }
+
+    .time-value {
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      line-height: 1;
+      background: linear-gradient(180deg, #fff 0%, #ffd6f0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 25px rgba(255, 45, 149, 0.5);
+    }
+
+    .time-label {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.65rem, 1.8vw, 0.9rem);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 6px;
+    }
+
+    .until-label {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.7rem, 2vw, 1rem);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+      margin-top: 1.2rem;
+    }
+
+    /* ---------- БЛОК С ИНФОРМАЦИЕЙ ---------- */
+    .info-section {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1100px;
+      padding: 20px clamp(16px, 4vw, 40px) 60px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(16px, 2.5vw, 28px);
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: clamp(18px, 2.5vw, 26px);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 30px rgba(255, 45, 149, 0.08);
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 45, 149, 0.55);
+    }
+
+    .info-card h2 {
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .info-card h2 .icon {
+      font-size: 1.2em;
+      line-height: 1;
+    }
+
+    .info-card p,
+    .info-card li {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.85rem, 1.6vw, 0.95rem);
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .info-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .info-card li strong {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Кнопки трейлеров */
+    .trailer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .trailer-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(180, 0, 255, 0.2), rgba(255, 45, 149, 0.2));
+      border: 1px solid rgba(255, 45, 149, 0.35);
+      color: #fff;
+      text-decoration: none;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .trailer-btn:hover {
+      background: linear-gradient(135deg, rgba(180, 0, 255, 0.35), rgba(255, 45, 149, 0.35));
+      border-color: rgba(255, 45, 149, 0.7);
+    }
+
+    .trailer-btn span.arrow {
+      font-size: 1.1em;
+      color: var(--vice-pink);
+    }
+
+    /* Карточки персонажей внутри колонки */
+    .characters-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .character-item strong {
+      display: block;
+      font-size: 1rem;
+      color: var(--vice-pink);
+      margin-bottom: 4px;
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    .character-item p {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    /* Выделение цифр в блоке карты */
+    .map-highlight {
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      color: var(--vice-yellow);
+      font-size: 1.15em;
+      letter-spacing: 0.02em;
+    }
+
+    /* ---------- АДАПТИВ ---------- */
+    @media (max-width: 480px) {
+      .vi-text { font-size: min(52vw, 34vh); }
+      .timer { gap: 8px; }
+      .time-unit { min-width: 55px; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .vi-text { font-size: min(22vw, 42vh); }
+      .timer { margin-top: 0.8rem; }
+      .until-label { margin-top: 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ---------- ТАЙМЕР ---------- -->
+  <div class="countdown-section">
+    <div class="gta-title">Grand Theft Auto</div>
+
+    <div class="vi-block">
+      <span class="vi-text">VI</span>
+    </div>
+
+    <div class="timer" id="timer">
+      <div class="time-unit">
+        <span class="time-value" id="days">000</span>
+        <span class="time-label">Дней</span>
+      </div>
+      <div class="time-unit">
+        <span class="time-value" id="hours">00</span>
+        <span class="time-label">Часов</span>
+      </div>
+      <div class="time-unit">
+        <span class="time-value" id="minutes">00</span>
+        <span class="time-label">Минут</span>
+      </div>
+      <div class="time-unit">
+        <span class="time-value" id="seconds">00</span>
+        <span class="time-label">Секунд</span>
+      </div>
+    </div>
+
+    <div class="until-label">До выхода</div>
+  </div>
+
+  <!-- ---------- ИНФОРМАЦИЯ ОБ ИГРЕ ---------- -->
+  <div class="info-section">
+    <div class="info-grid">
+
+      <!-- ТРЕЙЛЕРЫ -->
+      <div class="info-card">
+        <h2><span class="icon">🎬</span> Официальные трейлеры</h2>
+        <div class="trailer-links">
+          <a class="trailer-btn"
+             href="https://www.rockstargames.com/VI/trailer-1"
+             target="_blank" rel="noopener">
+            Trailer 1 <span class="arrow">→</span>
+          </a>
+          <a class="trailer-btn"
+             href="https://www.rockstargames.com/VI/trailer-2"
+             target="_blank" rel="noopener">
+            Trailer 2 <span class="arrow">→</span>
+          </a>
+          <a class="trailer-btn"
+             href="https://www.rockstargames.com/VI/an-extended-look"
+             target="_blank" rel="noopener">
+            An Extended Look <span class="arrow">→</span>
+          </a>
+          <a class="trailer-btn"
+             href="https://www.rockstargames.com/VI/launch-trailer"
+             target="_blank" rel="noopener">
+            Launch Trailer <span class="arrow">→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ПЕРСОНАЖИ -->
+      <div class="info-card">
+        <h2><span class="icon">👥</span> Главные герои</h2>
+        <div class="characters-list">
+          <div class="character-item">
+            <strong>Джейсон Дюваль</strong>
+            <p>Бывший военный, который пытается начать спокойную жизнь,
+            но оказывается втянут в криминал. По характеру — «тормоз» пары,
+            его решения чаще диктуют обстоятельства.</p>
+          </div>
+          <div class="character-item">
+            <strong>Люсия Каминос</strong>
+            <p>Только что вышла из тюрьмы и стремится изменить свою судьбу.
+            «Двигатель» пары: готова сама добиваться желаемого и вести за собой.</p>
+          </div>
+        </div>
+        <p style="margin-top:14px; font-size:0.8rem; color: rgba(255,255,255,0.45);">
+          История вдохновлена легендарной парой Бонни и Клайда.
+        </p>
+      </div>
+
+      <!-- РАЗМЕР КАРТЫ -->
+      <div class="info-card">
+        <h2><span class="icon">🗺️</span> Штат Леонида</h2>
+        <p>
+          Площадь суши вместе с Вайс-Сити и пригородами
+          <span class="map-highlight">почти равна</span> картам
+          GTA 4, GTA 5 и Red Dead Redemption 2,
+          <span class="map-highlight">если сложить их вместе</span>.
+        </p>
+        <p style="margin-top:12px;">
+          При этом карта примерно <span class="map-highlight">вдвое больше</span>,
+          чем в GTA 5. Интерьеров будет «на порядок больше»:
+          заходить можно будет в большинство зданий.
+        </p>
+        <p style="margin-top:12px; font-size:0.8rem; color: rgba(255,255,255,0.45);">
+          Леонида вдохновлена Флоридой; в игре будут ураганы и тропические штормы.
+        </p>
+      </div>
+
+      <!-- ПЛАТФОРМЫ -->
+      <div class="info-card">
+        <h2><span class="icon">🎮</span> Платформы и дата</h2>
+        <ul>
+          <li><strong>PS5 и Xbox Series X|S</strong> — 19 ноября 2026 года.</li>
+          <li><strong>ПК-версия</strong> — ожидается в первом квартале 2027 года (январь–март).</li>
+          <li><strong>Русские субтитры</strong> — подтверждены.</li>
+          <li><strong>Предзагрузка</strong> — стартовала 10 ноября;
+              требуется до 212 ГБ свободного места.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Официальная дата выхода GTA VI: 19 ноября 2026 года
+    const RELEASE_DATE = new Date('2026-11-19T00:00:00').getTime();
+
+    const daysEl    = document.getElementById('days');
+    const hoursEl   = document.getElementById('hours');
+    const minutesEl = document.getElementById('minutes');
+    const secondsEl = document.getElementById('seconds');
+    const untilEl   = document.querySelector('.until-label');
+
+    function pad(num, size) {
+      let s = String(num);
+      while (s.length < size) s = '0' + s;
+      return s;
+    }
+
+    function updateCountdown() {
+      const distance = RELEASE_DATE - Date.now();
+
+      if (distance <= 0) {
+        daysEl.textContent    = '000';
+        hoursEl.textContent   = '00';
+        minutesEl.textContent = '00';
+        secondsEl.textContent = '00';
+        untilEl.textContent   = 'GTA VI УЖЕ ВЫШЛА';
+        return;
+      }
+
+      const days    = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours   = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      daysEl.textContent    = pad(days, 3);
+      hoursEl.textContent   = pad(hours, 2);
+      minutesEl.textContent = pad(minutes, 2);
+      secondsEl.textContent = pad(seconds, 2);
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  </script>
+
+</body>
+</html>
