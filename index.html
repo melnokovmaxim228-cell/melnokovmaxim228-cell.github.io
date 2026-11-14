@@ -79,7 +79,7 @@
       font-family: 'Anton', 'Arial Black', sans-serif;
       font-size: clamp(6rem, min(26vw, 38vh), 16rem);
       line-height: 0.78;
-      letter-spacing: -0.04em;
+      letter-spacing: 0.02em; /* Исправлено: убрано слипание букв */
       padding: 0.02em 0.08em;
       background: linear-gradient(
         180deg,
@@ -98,21 +98,22 @@
       transform-origin: center;
     }
 
+    /* Исправлено: новые силуэты пальм */
     .vi-block::before,
     .vi-block::after {
       content: '';
       position: absolute;
-      bottom: 8%;
-      width: 14%;
-      height: 55%;
-      background: rgba(5, 5, 16, 0.55);
-      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Cpath d='M50 200 Q45 120 30 60 Q25 40 10 20 Q30 30 50 70 Q70 30 90 20 Q75 40 70 60 Q55 120 50 200 Z'/%3E%3C/svg%3E") no-repeat center / contain;
-      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Cpath d='M50 200 Q45 120 30 60 Q25 40 10 20 Q30 30 50 70 Q70 30 90 20 Q75 40 70 60 Q55 120 50 200 Z'/%3E%3C/svg%3E") no-repeat center / contain;
+      bottom: 12%;
+      width: 22%;
+      height: 60%;
+      background: rgba(5, 5, 16, 0.7);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 120 Q48 60 50 20 Q30 10 10 20 Q35 25 48 30 Q20 35 5 50 Q30 40 48 40 Q25 55 15 70 Q35 55 50 50 Q65 55 85 70 Q75 55 52 40 Q70 40 95 50 Q80 35 52 30 Q65 25 90 20 Q70 10 50 20 Q52 60 50 120 Z'/%3E%3C/svg%3E") no-repeat center bottom / contain;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 120 Q48 60 50 20 Q30 10 10 20 Q35 25 48 30 Q20 35 5 50 Q30 40 48 40 Q25 55 15 70 Q35 55 50 50 Q65 55 85 70 Q75 55 52 40 Q70 40 95 50 Q80 35 52 30 Q65 25 90 20 Q70 10 50 20 Q52 60 50 120 Z'/%3E%3C/svg%3E") no-repeat center bottom / contain;
       pointer-events: none;
       z-index: 1;
     }
-    .vi-block::before { left: 12%; transform: scaleX(-1); }
-    .vi-block::after  { right: 12%; }
+    .vi-block::before { left: 6%; transform: scaleX(-1); }
+    .vi-block::after  { right: 6%; }
 
     .timer {
       display: flex;
@@ -260,7 +261,7 @@
       color: var(--vice-pink);
     }
 
-    /* Карточки персонажей внутри колонки */
+    /* Карточки персонажей */
     .characters-list {
       display: flex;
       flex-direction: column;
