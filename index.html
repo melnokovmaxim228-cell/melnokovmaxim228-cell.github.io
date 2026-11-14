@@ -33,6 +33,7 @@
       font-family: 'Anton', 'Arial Black', sans-serif;
       overflow-x: hidden;
       position: relative;
+      transition: background 1s ease;
     }
 
     /* Мягкое неоновое свечение фона */
@@ -46,6 +47,20 @@
         radial-gradient(circle at 50% 100%, rgba(255, 122, 0, 0.1), transparent 60%);
       pointer-events: none;
       z-index: 0;
+      transition: opacity 1s ease;
+    }
+
+    /* Эффект пульсации фона при выходе игры */
+    body.released::before {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 45, 149, 0.35), transparent 70%),
+        radial-gradient(circle at 50% 50%, rgba(180, 0, 255, 0.25), transparent 60%);
+      animation: pulseBg 2s infinite alternate;
+    }
+
+    @keyframes pulseBg {
+      0% { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.1); }
     }
 
     /* ---------- ОСНОВНОЙ КОНТЕЙНЕР (ТАЙМЕР) ---------- */
@@ -72,6 +87,12 @@
       display: inline-block;
       line-height: 1;
       margin: 0 auto;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* Увеличение логотипа при выходе игры */
+    body.released .vi-block {
+      transform: scale(1.05);
     }
 
     .vi-text {
@@ -79,7 +100,7 @@
       font-family: 'Anton', 'Arial Black', sans-serif;
       font-size: clamp(6rem, min(26vw, 38vh), 16rem);
       line-height: 0.78;
-      letter-spacing: 0.02em; /* Исправлено: убрано слипание букв */
+      letter-spacing: 0.02em;
       padding: 0.02em 0.08em;
       background: linear-gradient(
         180deg,
@@ -98,7 +119,6 @@
       transform-origin: center;
     }
 
-    /* Исправлено: новые силуэты пальм */
     .vi-block::before,
     .vi-block::after {
       content: '';
@@ -115,11 +135,24 @@
     .vi-block::before { left: 6%; transform: scaleX(-1); }
     .vi-block::after  { right: 6%; }
 
+    /* ---------- ТАЙМЕР ---------- */
+    .timer-container {
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      margin-top: clamp(1.2rem, 3.5vh, 2.5rem);
+    }
+
+    .timer-container.hidden {
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+      pointer-events: none;
+      position: absolute;
+      visibility: hidden;
+    }
+
     .timer {
       display: flex;
       gap: clamp(10px, 2.5vw, 30px);
       justify-content: center;
-      margin-top: clamp(1.2rem, 3.5vh, 2.5rem);
       flex-wrap: wrap;
     }
 
@@ -157,6 +190,71 @@
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.45);
       margin-top: 1.2rem;
+      transition: opacity 0.3s ease;
+    }
+
+    /* ---------- БЛОК "ИГРА ВЫШЛА" (СКРЫТ ИЗНАЧАЛЬНО) ---------- */
+    .released-block {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1rem;
+      opacity: 0;
+    }
+
+    .released-block.active {
+      display: flex;
+      animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .released-title {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--vice-pink), var(--vice-yellow));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 40px rgba(255, 45, 149, 0.8);
+      margin-bottom: 10px;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .released-sub {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
+      letter-spacing: 0.2em;
+      color: var(--vice-blue);
+      font-weight: bold;
+      margin-bottom: 25px;
+      text-shadow: 0 0 15px rgba(26, 26, 255, 0.6);
+    }
+
+    .released-btn {
+      display: inline-block;
+      padding: 15px 40px;
+      background: linear-gradient(135deg, var(--vice-pink), var(--vice-orange));
+      color: #fff;
+      text-decoration: none;
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      letter-spacing: 0.1em;
+      border-radius: 50px;
+      box-shadow: 0 0 30px rgba(255, 45, 149, 0.6);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-transform: uppercase;
+    }
+
+    .released-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 50px rgba(255, 45, 149, 0.9);
     }
 
     /* ---------- БЛОК С ИНФОРМАЦИЕЙ ---------- */
@@ -201,93 +299,44 @@
       gap: 10px;
     }
 
-    .info-card h2 .icon {
-      font-size: 1.2em;
-      line-height: 1;
-    }
+    .info-card h2 .icon { font-size: 1.2em; line-height: 1; }
 
-    .info-card p,
-    .info-card li {
+    .info-card p, .info-card li {
       font-family: 'Arial', sans-serif;
       font-size: clamp(0.85rem, 1.6vw, 0.95rem);
       line-height: 1.55;
       color: rgba(255, 255, 255, 0.75);
     }
 
-    .info-card ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .info-card ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .info-card li strong { color: #fff; font-weight: 600; }
 
-    .info-card li strong {
-      color: #fff;
-      font-weight: 600;
-    }
-
-    /* Кнопки трейлеров */
-    .trailer-links {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
+    .trailer-links { display: flex; flex-direction: column; gap: 10px; }
     .trailer-btn {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px 16px;
-      border-radius: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 12px 16px; border-radius: 10px;
       background: linear-gradient(135deg, rgba(180, 0, 255, 0.2), rgba(255, 45, 149, 0.2));
       border: 1px solid rgba(255, 45, 149, 0.35);
-      color: #fff;
-      text-decoration: none;
-      font-family: 'Arial', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      color: #fff; text-decoration: none;
+      font-family: 'Arial', sans-serif; font-size: 0.9rem; font-weight: 600;
       transition: background 0.2s ease, border-color 0.2s ease;
     }
-
     .trailer-btn:hover {
       background: linear-gradient(135deg, rgba(180, 0, 255, 0.35), rgba(255, 45, 149, 0.35));
       border-color: rgba(255, 45, 149, 0.7);
     }
+    .trailer-btn span.arrow { font-size: 1.1em; color: var(--vice-pink); }
 
-    .trailer-btn span.arrow {
-      font-size: 1.1em;
-      color: var(--vice-pink);
-    }
-
-    /* Карточки персонажей */
-    .characters-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
+    .characters-list { display: flex; flex-direction: column; gap: 14px; }
     .character-item strong {
-      display: block;
-      font-size: 1rem;
-      color: var(--vice-pink);
-      margin-bottom: 4px;
-      font-family: 'Anton', 'Arial Black', sans-serif;
-      letter-spacing: 0.05em;
+      display: block; font-size: 1rem; color: var(--vice-pink);
+      margin-bottom: 4px; font-family: 'Anton', 'Arial Black', sans-serif;
     }
+    .character-item p { font-size: 0.85rem; color: rgba(255, 255, 255, 0.65); }
 
-    .character-item p {
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.65);
-    }
-
-    /* Выделение цифр в блоке карты */
     .map-highlight {
       font-family: 'Anton', 'Arial Black', sans-serif;
-      color: var(--vice-yellow);
-      font-size: 1.15em;
-      letter-spacing: 0.02em;
+      color: var(--vice-yellow); font-size: 1.15em;
     }
 
     /* ---------- АДАПТИВ ---------- */
@@ -296,12 +345,6 @@
       .timer { gap: 8px; }
       .time-unit { min-width: 55px; }
       .info-grid { grid-template-columns: 1fr; }
-    }
-
-    @media (max-height: 500px) and (orientation: landscape) {
-      .vi-text { font-size: min(22vw, 42vh); }
-      .timer { margin-top: 0.8rem; }
-      .until-label { margin-top: 0.6rem; }
     }
   </style>
 </head>
@@ -315,26 +358,35 @@
       <span class="vi-text">VI</span>
     </div>
 
-    <div class="timer" id="timer">
-      <div class="time-unit">
-        <span class="time-value" id="days">000</span>
-        <span class="time-label">Дней</span>
+    <!-- Контейнер таймера (скроется при выходе) -->
+    <div class="timer-container" id="timer-container">
+      <div class="timer">
+        <div class="time-unit">
+          <span class="time-value" id="days">000</span>
+          <span class="time-label">Дней</span>
+        </div>
+        <div class="time-unit">
+          <span class="time-value" id="hours">00</span>
+          <span class="time-label">Часов</span>
+        </div>
+        <div class="time-unit">
+          <span class="time-value" id="minutes">00</span>
+          <span class="time-label">Минут</span>
+        </div>
+        <div class="time-unit">
+          <span class="time-value" id="seconds">00</span>
+          <span class="time-label">Секунд</span>
+        </div>
       </div>
-      <div class="time-unit">
-        <span class="time-value" id="hours">00</span>
-        <span class="time-label">Часов</span>
-      </div>
-      <div class="time-unit">
-        <span class="time-value" id="minutes">00</span>
-        <span class="time-label">Минут</span>
-      </div>
-      <div class="time-unit">
-        <span class="time-value" id="seconds">00</span>
-        <span class="time-label">Секунд</span>
-      </div>
+      <div class="until-label">До выхода</div>
     </div>
 
-    <div class="until-label">До выхода</div>
+    <!-- Блок, который появится вместо таймера -->
+    <div class="released-block" id="released-block">
+      <div class="released-title">GTA VI УЖЕ ВЫШЛА</div>
+      <div class="released-sub">WELCOME TO VICE CITY</div>
+      <a href="https://www.rockstargames.com/VI" target="_blank" rel="noopener" class="released-btn">Играть сейчас</a>
+    </div>
   </div>
 
   <!-- ---------- ИНФОРМАЦИЯ ОБ ИГРЕ ---------- -->
@@ -345,26 +397,10 @@
       <div class="info-card">
         <h2><span class="icon">🎬</span> Официальные трейлеры</h2>
         <div class="trailer-links">
-          <a class="trailer-btn"
-             href="https://www.rockstargames.com/VI/trailer-1"
-             target="_blank" rel="noopener">
-            Trailer 1 <span class="arrow">→</span>
-          </a>
-          <a class="trailer-btn"
-             href="https://www.rockstargames.com/VI/trailer-2"
-             target="_blank" rel="noopener">
-            Trailer 2 <span class="arrow">→</span>
-          </a>
-          <a class="trailer-btn"
-             href="https://www.rockstargames.com/VI/an-extended-look"
-             target="_blank" rel="noopener">
-            An Extended Look <span class="arrow">→</span>
-          </a>
-          <a class="trailer-btn"
-             href="https://www.rockstargames.com/VI/launch-trailer"
-             target="_blank" rel="noopener">
-            Launch Trailer <span class="arrow">→</span>
-          </a>
+          <a class="trailer-btn" href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener">Trailer 1 <span class="arrow">→</span></a>
+          <a class="trailer-btn" href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener">Trailer 2 <span class="arrow">→</span></a>
+          <a class="trailer-btn" href="https://www.rockstargames.com/VI/an-extended-look" target="_blank" rel="noopener">An Extended Look <span class="arrow">→</span></a>
+          <a class="trailer-btn" href="https://www.rockstargames.com/VI/launch-trailer" target="_blank" rel="noopener">Launch Trailer <span class="arrow">→</span></a>
         </div>
       </div>
 
@@ -374,38 +410,20 @@
         <div class="characters-list">
           <div class="character-item">
             <strong>Джейсон Дюваль</strong>
-            <p>Бывший военный, который пытается начать спокойную жизнь,
-            но оказывается втянут в криминал. По характеру — «тормоз» пары,
-            его решения чаще диктуют обстоятельства.</p>
+            <p>Бывший военный, который пытается начать спокойную жизнь, но оказывается втянут в криминал. По характеру — «тормоз» пары, его решения чаще диктуют обстоятельства.</p>
           </div>
           <div class="character-item">
             <strong>Люсия Каминос</strong>
-            <p>Только что вышла из тюрьмы и стремится изменить свою судьбу.
-            «Двигатель» пары: готова сама добиваться желаемого и вести за собой.</p>
+            <p>Только что вышла из тюрьмы и стремится изменить свою судьбу. «Двигатель» пары: готова сама добиваться желаемого и вести за собой.</p>
           </div>
         </div>
-        <p style="margin-top:14px; font-size:0.8rem; color: rgba(255,255,255,0.45);">
-          История вдохновлена легендарной парой Бонни и Клайда.
-        </p>
       </div>
 
       <!-- РАЗМЕР КАРТЫ -->
       <div class="info-card">
         <h2><span class="icon">🗺️</span> Штат Леонида</h2>
-        <p>
-          Площадь суши вместе с Вайс-Сити и пригородами
-          <span class="map-highlight">почти равна</span> картам
-          GTA 4, GTA 5 и Red Dead Redemption 2,
-          <span class="map-highlight">если сложить их вместе</span>.
-        </p>
-        <p style="margin-top:12px;">
-          При этом карта примерно <span class="map-highlight">вдвое больше</span>,
-          чем в GTA 5. Интерьеров будет «на порядок больше»:
-          заходить можно будет в большинство зданий.
-        </p>
-        <p style="margin-top:12px; font-size:0.8rem; color: rgba(255,255,255,0.45);">
-          Леонида вдохновлена Флоридой; в игре будут ураганы и тропические штормы.
-        </p>
+        <p>Площадь суши вместе с Вайс-Сити и пригородами <span class="map-highlight">почти равна</span> картам GTA 4, GTA 5 и Red Dead Redemption 2, <span class="map-highlight">если сложить их вместе</span>.</p>
+        <p style="margin-top:12px;">При этом карта примерно <span class="map-highlight">вдвое больше</span>, чем в GTA 5. Интерьеров будет «на порядок больше»: заходить можно будет в большинство зданий.</p>
       </div>
 
       <!-- ПЛАТФОРМЫ -->
@@ -415,8 +433,7 @@
           <li><strong>PS5 и Xbox Series X|S</strong> — 19 ноября 2026 года.</li>
           <li><strong>ПК-версия</strong> — ожидается в первом квартале 2027 года (январь–март).</li>
           <li><strong>Русские субтитры</strong> — подтверждены.</li>
-          <li><strong>Предзагрузка</strong> — стартовала 10 ноября;
-              требуется до 212 ГБ свободного места.</li>
+          <li><strong>Предзагрузка</strong> — стартовала 10 ноября; требуется до 212 ГБ свободного места.</li>
         </ul>
       </div>
 
@@ -431,7 +448,9 @@
     const hoursEl   = document.getElementById('hours');
     const minutesEl = document.getElementById('minutes');
     const secondsEl = document.getElementById('seconds');
-    const untilEl   = document.querySelector('.until-label');
+    
+    const timerContainer = document.getElementById('timer-container');
+    const releasedBlock  = document.getElementById('released-block');
 
     function pad(num, size) {
       let s = String(num);
@@ -439,15 +458,20 @@
       return s;
     }
 
+    let timerInterval;
+
     function updateCountdown() {
       const distance = RELEASE_DATE - Date.now();
 
       if (distance <= 0) {
-        daysEl.textContent    = '000';
-        hoursEl.textContent   = '00';
-        minutesEl.textContent = '00';
-        secondsEl.textContent = '00';
-        untilEl.textContent   = 'GTA VI УЖЕ ВЫШЛА';
+        // Останавливаем таймер
+        clearInterval(timerInterval);
+        
+        // Скрываем таймер, показываем блок "Игра вышла" и меняем фон
+        timerContainer.classList.add('hidden');
+        releasedBlock.classList.add('active');
+        document.body.classList.add('released');
+        
         return;
       }
 
@@ -463,7 +487,7 @@
     }
 
     updateCountdown();
-    setInterval(updateCountdown, 1000);
+    timerInterval = setInterval(updateCountdown, 1000);
   </script>
 
 </body>
