@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTA VI — Хаб и Таймер</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+    :root {
+      --vice-blue:   #1a1aff;
+      --vice-purple: #b400ff;
+      --vice-pink:   #ff2d95;
+      --vice-orange: #ff7a00;
+      --vice-yellow: #ffcc00;
+      --bg-dark:     #050510;
+      --card-bg:     rgba(255, 255, 255, 0.04);
+      --card-border: rgba(255, 45, 149, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Фоновое неоновое свечение */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(180, 0, 255, 0.15), transparent 50%),
+        radial-gradient(circle at 80% 60%, rgba(255, 45, 149, 0.12), transparent 50%),
+        radial-gradient(circle at 50% 100%, rgba(255, 122, 0, 0.1), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ---------- СЕКЦИЯ ТАЙМЕРА ---------- */
+    .countdown-section {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 40px 20px 20px;
+      width: 100%;
+    }
+
+    .gta-title {
+      font-size: clamp(1.2rem, 3.5vw, 2.6rem);
+      letter-spacing: 0.12em;
+      color: #fff;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 0.3em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .vi-block {
+      position: relative;
+      display: inline-block;
+      line-height: 1;
+      margin: 0 auto;
+    }
+
+    .vi-text {
+      display: block;
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(6rem, min(26vw, 38vh), 16rem);
+      line-height: 0.78;
+      letter-spacing: 0.02em;
+      padding: 0.02em 0.08em;
+      background: linear-gradient(
+        180deg,
+        var(--vice-blue)   0%,
+        var(--vice-purple) 30%,
+        var(--vice-pink)   60%,
+        var(--vice-orange) 85%,
+        var(--vice-yellow) 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-stroke: 0.025em #fff;
+      filter: drop-shadow(0 0 30px rgba(255, 45, 149, 0.45));
+      transform: scaleY(0.9);
+      transform-origin: center;
+    }
+
+    .vi-block::before,
+    .vi-block::after {
+      content: '';
+      position: absolute;
+      bottom: 12%;
+      width: 22%;
+      height: 60%;
+      background: rgba(5, 5, 16, 0.7);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 120 Q48 60 50 20 Q30 10 10 20 Q35 25 48 30 Q20 35 5 50 Q30 40 48 40 Q25 55 15 70 Q35 55 50 50 Q65 55 85 70 Q75 55 52 40 Q70 40 95 50 Q80 35 52 30 Q65 25 90 20 Q70 10 50 20 Q52 60 50 120 Z'/%3E%3C/svg%3E") no-repeat center bottom / contain;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 120 Q48 60 50 20 Q30 10 10 20 Q35 25 48 30 Q20 35 5 50 Q30 40 48 40 Q25 55 15 70 Q35 55 50 50 Q65 55 85 70 Q75 55 52 40 Q70 40 95 50 Q80 35 52 30 Q65 25 90 20 Q70 10 50 20 Q52 60 50 120 Z'/%3E%3C/svg%3E") no-repeat center bottom / contain;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .vi-block::before { left: 6%; transform: scaleX(-1); }
+    .vi-block::after  { right: 6%; }
+
+    /* Переключатель целей таймера */
+    .target-selector {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .target-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.6);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .target-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+
+    .target-btn.active {
+      background: linear-gradient(135deg, rgba(180, 0, 255, 0.4), rgba(255, 45, 149, 0.4));
+      border-color: var(--vice-pink);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 45, 149, 0.4);
+    }
+
+    /* Таймер */
+    .timer {
+      display: flex;
+      gap: clamp(10px, 2.5vw, 30px);
+      justify-content: center;
+      margin-top: clamp(1.2rem, 3.5vh, 2.5rem);
+      flex-wrap: wrap;
+      transition: opacity 0.3s ease;
+    }
+
+    .time-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: clamp(60px, 12vw, 110px);
+    }
+
+    .time-value {
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      line-height: 1;
+      background: linear-gradient(180deg, #fff 0%, #ffd6f0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 25px rgba(255, 45, 149, 0.5);
+    }
+
+    .time-label {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.65rem, 1.8vw, 0.9rem);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 6px;
+    }
+
+    .until-label {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.7rem, 2vw, 1rem);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+      margin-top: 1.2rem;
+    }
+
+    /* ---------- БЛОК ГАЙДОВ И ИНФОРМАЦИИ ---------- */
+    .info-section {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1200px;
+      padding: 30px clamp(16px, 4vw, 40px) 60px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: clamp(16px, 2.5vw, 28px);
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: clamp(18px, 2.5vw, 26px);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 30px rgba(255, 45, 149, 0.08);
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 45, 149, 0.55);
+    }
+
+    .info-card h2 {
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .info-card h2 .icon { font-size: 1.2em; line-height: 1; }
+
+    .info-card p, .info-card li {
+      font-family: 'Arial', sans-serif;
+      font-size: clamp(0.85rem, 1.6vw, 0.95rem);
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .info-card ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .info-card li strong { color: #fff; font-weight: 600; }
+
+    .map-highlight {
+      font-family: 'Anton', 'Arial Black', sans-serif;
+      color: var(--vice-yellow);
+      font-size: 1.15em;
+    }
+
+    .guide-tip {
+      background: rgba(255, 45, 149, 0.1);
+      border-left: 3px solid var(--vice-pink);
+      padding: 10px 14px;
+      margin-top: 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem !important;
+      color: #fff !important;
+    }
+
+    .trailer-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 12px 16px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(180, 0, 255, 0.2), rgba(255, 45, 149, 0.2));
+      border: 1px solid rgba(255, 45, 149, 0.35);
+      color: #fff; text-decoration: none;
+      font-family: 'Arial', sans-serif; font-size: 0.9rem; font-weight: 600;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      margin-bottom: 8px;
+    }
+    .trailer-btn:hover {
+      background: linear-gradient(135deg, rgba(180, 0, 255, 0.35), rgba(255, 45, 149, 0.35));
+      border-color: rgba(255, 45, 149, 0.7);
+    }
+    .trailer-btn span.arrow { font-size: 1.1em; color: var(--vice-pink); }
+
+    /* ---------- АДАПТИВ ---------- */
+    @media (max-width: 480px) {
+      .vi-text { font-size: min(52vw, 34vh); }
+      .timer { gap: 8px; }
+      .time-unit { min-width: 55px; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ---------- ТАЙМЕР ---------- -->
+  <div class="countdown-section">
+    <div class="gta-title">Grand Theft Auto VI</div>
+
+    <div class="vi-block">
+      <span class="vi-text">VI</span>
+    </div>
+
+    <!-- Переключатель: До чего считаем? -->
+    <div class="target-selector">
+      <button class="target-btn active" data-target="pc">ПК-версия</button>
+      <button class="target-btn" data-target="online">GTA Online</button>
+    </div>
+
+    <div class="timer" id="timer">
+      <div class="time-unit">
+        <span class="time-value" id="days">000</span>
+        <span class="time-label">Дней</span>
+      </div>
+      <div class="time-unit">
+        <span class="time-value" id="hours">00</span>
+        <span class="time-label">Часов</span>
+      </div>
+      <div class="time-unit">
+        <span class="time-value" id="minutes">00</span>
+        <span class="time-label">Минут</span>
+      </div>
+      <div class="time-unit">
+        <span class="time-value" id="seconds">00</span>
+        <span class="time-label">Секунд</span>
+      </div>
+    </div>
+
+    <div class="until-label" id="until-label">До релиза на ПК (ожидаемо Q1 2027)</div>
+  </div>
+
+  <!-- ---------- ГАЙДЫ И ИНФОРМАЦИЯ ---------- -->
+  <div class="info-section">
+    <div class="info-grid">
+
+      <!-- ГАЙД: ДЕНЬГИ И СТАРТ -->
+      <div class="info-card">
+        <h2><span class="icon">💰</span> Как начать и поднять деньги</h2>
+        <ul>
+          <li><strong>Стартовый капитал:</strong> Не тратьте первые деньги на тюнинг. Инвестируйте в оружие и простую одежду для маскировки.</li>
+          <li><strong>Полицейские камеры:</strong> В игре есть носимые камеры на телах копов. Если вы попали в объектив, вас будут искать активнее — прячьте лицо.</li>
+          <li><strong>6-звёздный розыск:</strong> Теперь побег от полиции — это отдельная мини-игра. Меняйте машины и прячьтесь в переулках.</li>
+        </ul>
+        <div class="guide-tip">💡 Совет: Изучите систему «доверия» между Джейсоном и Люсией. Чем выше доверие, тем больше денег вы получите с каждого дела.</div>
+      </div>
+
+      <!-- ГАЙД: КАРТА И ИССЛЕДОВАНИЕ -->
+      <div class="info-card">
+        <h2><span class="icon">🗺️</span> Секреты Леониды</h2>
+        <p>Карта штата огромна. Чтобы не потеряться, используйте «Режим детектива» (нажмите L3 + R3). Он подсвечивает интерактивные предметы, луты и важные улики.</p>
+        <ul>
+          <li><strong>Флорида-Кис:</strong> Обязательно исследуйте острова — там спрятаны редкие лодки и уникальные транспортные средства.</li>
+          <li><strong>Эверглейдс:</strong> Болота опасны, но именно там находятся лучшие места для охоты на редких животных (если они есть в игре).</li>
+          <li><strong>Вайс-Сити:</strong> Не забывайте заходить в здания. Интерьеров стало в разы больше, и внутри часто лежат ценные вещи.</li>
+        </ul>
+      </div>
+
+      <!-- ГАЙД: ТРАНСПОРТ -->
+      <div class="info-card">
+        <h2><span class="icon">🚗</span> Транспорт и управление</h2>
+        <p>В игре более 200 подтверждённых машин, мотоциклов и лодок. Управление стало реалистичнее: машины нужно прогревать, а на поворотах — сбрасывать скорость.</p>
+        <ul>
+          <li><strong>Классы машин:</strong> Не пытайтесь уехать от спорткара на внедорожнике. Используйте класс транспорта под ситуацию.</li>
+          <li><strong>Камера:</strong> Нажмите «вниз» на крестовине + квадрат, чтобы переключить ракурс камеры (ближе/дальше).</li>
+          <li><strong>Лодки:</strong> В ГТА 6 водный транспорт играет огромную роль. Ищите причалы в Вайс-Сити и на Кис.</li>
+        </ul>
+      </div>
+
+      <!-- ГАЙД: ПЕРСОНАЖИ -->
+      <div class="info-card">
+        <h2><span class="icon">👥</span> Джейсон и Люсия</h2>
+        <p>Дуэт главных героев — это ядро истории. У каждого свои навыки: Джейсон сильнее в оружии и выживании, Люсия — в харизме и взломе.</p>
+        <ul>
+          <li><strong>Романы и отношения:</strong> Ваши действия влияют на их отношения. Проводите время вместе, чтобы открыть уникальные диалоги и миссии.</li>
+          <li><strong>Физическая форма:</strong> Персонажи могут набирать вес или терять форму. Следите за питанием и тренировками.</li>
+        </ul>
+        <div class="guide-tip">💡 Совет: История вдохновлена Бонни и Клайдом. Ожидайте, что доверие и предательство сыграют ключевую роль в финале.</div>
+      </div>
+
+      <!-- ИНФОРМАЦИЯ: ЧТО ДАЛЬШЕ -->
+      <div class="info-card">
+        <h2><span class="icon">🔮</span> Что нас ждёт в будущем?</h2>
+        <ul>
+          <li><strong>ПК-версия:</strong> Официально не анонсирована. Rockstar традиционно выпускает ПК-версии позже. Инсайдеры и аналитики называют окно <strong>Q1 2027</strong> (GamesBeat), хотя некоторые прогнозы сдвигают релиз к <strong>Q1 2028</strong>.</li>
+          <li><strong>GTA Online:</strong> Мультиплеер для GTA 6 ожидается не раньше конца 2027 года. Bloomberg сообщал, что онлайн появится «через год» после релиза.</li>
+          <li><strong>Сюжетные DLC:</strong> Официально не анонсированы. Rockstar пока молчит, но история GTA 5 намекает, что DLC может не быть вовсе.</li>
+        </ul>
+      </div>
+
+      <!-- ПОЛЕЗНЫЕ ССЫЛКИ -->
+      <div class="info-card">
+        <h2><span class="icon">🔗</span> Полезные ссылки</h2>
+        <a class="trailer-btn" href="https://www.rockstargames.com/VI" target="_blank" rel="noopener">Официальный сайт GTA VI <span class="arrow">→</span></a>
+        <a class="trailer-btn" href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener">Trailer 1 <span class="arrow">→</span></a>
+        <a class="trailer-btn" href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener">Trailer 2 <span class="arrow">→</span></a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- ЛОГИКА ТАЙМЕРА ---
+    // Примечание: точная дата ПК-версии не объявлена, используется наиболее вероятный прогноз (Q1 2027).
+    // Для GTA Online используется ориентир "конец 2027 года" (на основе отчётов Bloomberg).
+    const TARGETS = {
+      pc: {
+        date: '2027-03-31T23:59:59', // Условный дедлайн Q1 2027
+        label: 'До релиза на ПК (ожидаемо Q1 2027)'
+      },
+      online: {
+        date: '2027-12-31T23:59:59', // Условный дедлайн "конец 2027"
+        label: 'До запуска GTA Online (ожидаемо конец 2027)'
+      }
+    };
+
+    let currentTarget = 'pc';
+    let timerInterval;
+
+    const daysEl    = document.getElementById('days');
+    const hoursEl   = document.getElementById('hours');
+    const minutesEl = document.getElementById('minutes');
+    const secondsEl = document.getElementById('seconds');
+    const untilEl   = document.getElementById('until-label');
+    const targetBtns = document.querySelectorAll('.target-btn');
+
+    function pad(num, size) {
+      let s = String(num);
+      while (s.length < size) s = '0' + s;
+      return s;
+    }
+
+    function updateCountdown() {
+      const targetData = TARGETS[currentTarget];
+      const targetDate = new Date(targetData.date).getTime();
+      const distance = targetDate - Date.now();
+
+      // Если время вышло (для теста можно поставить прошедшую дату)
+      if (distance <= 0) {
+        daysEl.textContent    = '000';
+        hoursEl.textContent   = '00';
+        minutesEl.textContent = '00';
+        secondsEl.textContent = '00';
+        untilEl.textContent   = 'СОБЫТИЕ УЖЕ НАСТУПИЛО!';
+        clearInterval(timerInterval);
+        return;
+      }
+
+      const days    = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours   = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      daysEl.textContent    = pad(days, 3);
+      hoursEl.textContent   = pad(hours, 2);
+      minutesEl.textContent = pad(minutes, 2);
+      secondsEl.textContent = pad(seconds, 2);
+      untilEl.textContent   = targetData.label;
+    }
+
+    function startTimer(targetKey) {
+      currentTarget = targetKey;
+      clearInterval(timerInterval);
+      updateCountdown();
+      timerInterval = setInterval(updateCountdown, 1000);
+    }
+
+    // Обработка кликов по кнопкам переключения
+    targetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Меняем активный класс
+        targetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Запускаем таймер с новой целью
+        startTimer(btn.dataset.target);
+      });
+    });
+
+    // Первый запуск
+    startTimer('pc');
+  </script>
+
+</body>
+</html>
