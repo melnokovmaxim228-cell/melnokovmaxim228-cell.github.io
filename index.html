@@ -1,483 +1,831 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GTA VI — Хаб и Таймер</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>NEON RUNNER</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05010f;
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #c{display:block;width:100%;height:100%;touch-action:none}
 
-    :root {
-      --vice-blue:   #1a1aff;
-      --vice-purple: #b400ff;
-      --vice-pink:   #ff2d95;
-      --vice-orange: #ff7a00;
-      --vice-yellow: #ffcc00;
-      --bg-dark:     #050510;
-      --card-bg:     rgba(255, 255, 255, 0.04);
-      --card-border: rgba(255, 45, 149, 0.25);
-    }
+  #ui{position:fixed;inset:0;pointer-events:none;padding:14px;
+      display:flex;flex-direction:column;justify-content:space-between;
+      text-shadow:0 0 10px currentColor,0 0 30px currentColor}
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  #top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  #scoreBox{color:#00e5ff;font-size:clamp(22px,5vw,40px);font-weight:700;letter-spacing:2px;line-height:1}
+  #scoreBox small{display:block;font-size:9px;letter-spacing:3px;opacity:.55;margin-top:4px}
+  #coinBox{color:#ffd21e;font-size:clamp(16px,3.6vw,26px);font-weight:700;text-align:right;line-height:1}
+  #coinBox small{display:block;font-size:9px;letter-spacing:3px;opacity:.55;margin-top:4px}
+  #boardTag{color:#00ffc8;font-size:11px;letter-spacing:2px;margin-top:8px;text-align:right;
+    opacity:0;transition:opacity .2s}
+  #boardTag.on{opacity:1;animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.35}}
 
-    body {
-      background: var(--bg-dark);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-family: 'Anton', 'Arial Black', sans-serif;
-      overflow-x: hidden;
-      position: relative;
-    }
+  #bottom{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .buff{font-size:11px;letter-spacing:2px;padding:6px 10px;border-radius:6px;
+    border:1px solid currentColor;background:rgba(255,255,255,.04);
+    opacity:0;transform:translateY(8px);transition:.18s}
+  .buff.on{opacity:1;transform:none}
+  #bMagnet{color:#ff2fb0}
+  #bX2{color:#ffd21e}
 
-    /* Фоновое неоновое свечение */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(180, 0, 255, 0.15), transparent 50%),
-        radial-gradient(circle at 80% 60%, rgba(255, 45, 149, 0.12), transparent 50%),
-        radial-gradient(circle at 50% 100%, rgba(255, 122, 0, 0.1), transparent 60%);
-      pointer-events: none;
-      z-index: 0;
-    }
+  #flash{position:fixed;inset:0;pointer-events:none;background:#00ffc8;opacity:0;
+    mix-blend-mode:screen;transition:opacity .35s}
 
-    /* ---------- СЕКЦИЯ ТАЙМЕРА ---------- */
-    .countdown-section {
-      position: relative;
-      z-index: 2;
-      text-align: center;
-      padding: 40px 20px 20px;
-      width: 100%;
-    }
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;
+    background:radial-gradient(ellipse at center,rgba(20,0,45,.75),rgba(5,1,15,.96));
+    backdrop-filter:blur(3px);transition:opacity .3s;z-index:10}
+  .overlay.hide{opacity:0;pointer-events:none}
 
-    .gta-title {
-      font-size: clamp(1.2rem, 3.5vw, 2.6rem);
-      letter-spacing: 0.12em;
-      color: #fff;
-      text-transform: uppercase;
-      line-height: 1;
-      margin-bottom: 0.3em;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-    }
+  h1{font-size:clamp(30px,9vw,64px);letter-spacing:6px;font-weight:800;
+     color:#00e5ff;text-shadow:0 0 12px #00e5ff,0 0 46px #0088ff;line-height:.95}
+  h1 span{display:block;color:#ff2fb0;text-shadow:0 0 12px #ff2fb0,0 0 46px #a0006e}
+  .sub{font-size:11px;letter-spacing:4px;color:#7a5cff;opacity:.8}
+  .keys{font-size:12px;line-height:2;color:#b9a8ff;letter-spacing:1px;opacity:.85}
+  .keys b{color:#00e5ff}
+  .big{font-size:clamp(28px,7vw,48px);color:#ffd21e;font-weight:800;
+       text-shadow:0 0 14px #ffd21e,0 0 40px #a06a00}
 
-    .vi-block {
-      position: relative;
-      display: inline-block;
-      line-height: 1;
-      margin: 0 auto;
-    }
-
-    .vi-text {
-      display: block;
-      font-family: 'Anton', 'Arial Black', sans-serif;
-      font-size: clamp(6rem, min(26vw, 38vh), 16rem);
-      line-height: 0.78;
-      letter-spacing: 0.02em;
-      padding: 0.02em 0.08em;
-      background: linear-gradient(
-        180deg,
-        var(--vice-blue)   0%,
-        var(--vice-purple) 30%,
-        var(--vice-pink)   60%,
-        var(--vice-orange) 85%,
-        var(--vice-yellow) 100%
-      );
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      -webkit-text-stroke: 0.025em #fff;
-      filter: drop-shadow(0 0 30px rgba(255, 45, 149, 0.45));
-      transform: scaleY(0.9);
-      transform-origin: center;
-    }
-
-    .vi-block::before,
-    .vi-block::after {
-      content: '';
-      position: absolute;
-      bottom: 12%;
-      width: 22%;
-      height: 60%;
-      background: rgba(5, 5, 16, 0.7);
-      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 120 Q48 60 50 20 Q30 10 10 20 Q35 25 48 30 Q20 35 5 50 Q30 40 48 40 Q25 55 15 70 Q35 55 50 50 Q65 55 85 70 Q75 55 52 40 Q70 40 95 50 Q80 35 52 30 Q65 25 90 20 Q70 10 50 20 Q52 60 50 120 Z'/%3E%3C/svg%3E") no-repeat center bottom / contain;
-      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M50 120 Q48 60 50 20 Q30 10 10 20 Q35 25 48 30 Q20 35 5 50 Q30 40 48 40 Q25 55 15 70 Q35 55 50 50 Q65 55 85 70 Q75 55 52 40 Q70 40 95 50 Q80 35 52 30 Q65 25 90 20 Q70 10 50 20 Q52 60 50 120 Z'/%3E%3C/svg%3E") no-repeat center bottom / contain;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .vi-block::before { left: 6%; transform: scaleX(-1); }
-    .vi-block::after  { right: 6%; }
-
-    /* Переключатель целей таймера */
-    .target-selector {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
-      flex-wrap: wrap;
-    }
-
-    .target-btn {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: rgba(255, 255, 255, 0.6);
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-family: 'Arial', sans-serif;
-      font-size: 0.8rem;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-    }
-
-    .target-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
-    }
-
-    .target-btn.active {
-      background: linear-gradient(135deg, rgba(180, 0, 255, 0.4), rgba(255, 45, 149, 0.4));
-      border-color: var(--vice-pink);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(255, 45, 149, 0.4);
-    }
-
-    /* Таймер */
-    .timer {
-      display: flex;
-      gap: clamp(10px, 2.5vw, 30px);
-      justify-content: center;
-      margin-top: clamp(1.2rem, 3.5vh, 2.5rem);
-      flex-wrap: wrap;
-      transition: opacity 0.3s ease;
-    }
-
-    .time-unit {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: clamp(60px, 12vw, 110px);
-    }
-
-    .time-value {
-      font-family: 'Anton', 'Arial Black', sans-serif;
-      font-size: clamp(2rem, 6vw, 4rem);
-      line-height: 1;
-      background: linear-gradient(180deg, #fff 0%, #ffd6f0 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      text-shadow: 0 0 25px rgba(255, 45, 149, 0.5);
-    }
-
-    .time-label {
-      font-family: 'Arial', sans-serif;
-      font-size: clamp(0.65rem, 1.8vw, 0.9rem);
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.6);
-      margin-top: 6px;
-    }
-
-    .until-label {
-      font-family: 'Arial', sans-serif;
-      font-size: clamp(0.7rem, 2vw, 1rem);
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.45);
-      margin-top: 1.2rem;
-    }
-
-    /* ---------- БЛОК ГАЙДОВ И ИНФОРМАЦИИ ---------- */
-    .info-section {
-      position: relative;
-      z-index: 2;
-      width: 100%;
-      max-width: 1200px;
-      padding: 30px clamp(16px, 4vw, 40px) 60px;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: clamp(16px, 2.5vw, 28px);
-    }
-
-    .info-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: clamp(18px, 2.5vw, 26px);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 0 30px rgba(255, 45, 149, 0.08);
-      transition: transform 0.25s ease, border-color 0.25s ease;
-    }
-
-    .info-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(255, 45, 149, 0.55);
-    }
-
-    .info-card h2 {
-      font-family: 'Anton', 'Arial Black', sans-serif;
-      font-size: clamp(1.1rem, 2.2vw, 1.5rem);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #fff;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .info-card h2 .icon { font-size: 1.2em; line-height: 1; }
-
-    .info-card p, .info-card li {
-      font-family: 'Arial', sans-serif;
-      font-size: clamp(0.85rem, 1.6vw, 0.95rem);
-      line-height: 1.55;
-      color: rgba(255, 255, 255, 0.75);
-    }
-
-    .info-card ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .info-card li strong { color: #fff; font-weight: 600; }
-
-    .map-highlight {
-      font-family: 'Anton', 'Arial Black', sans-serif;
-      color: var(--vice-yellow);
-      font-size: 1.15em;
-    }
-
-    .guide-tip {
-      background: rgba(255, 45, 149, 0.1);
-      border-left: 3px solid var(--vice-pink);
-      padding: 10px 14px;
-      margin-top: 12px;
-      border-radius: 0 8px 8px 0;
-      font-size: 0.85rem !important;
-      color: #fff !important;
-    }
-
-    .trailer-btn {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; padding: 12px 16px; border-radius: 10px;
-      background: linear-gradient(135deg, rgba(180, 0, 255, 0.2), rgba(255, 45, 149, 0.2));
-      border: 1px solid rgba(255, 45, 149, 0.35);
-      color: #fff; text-decoration: none;
-      font-family: 'Arial', sans-serif; font-size: 0.9rem; font-weight: 600;
-      transition: background 0.2s ease, border-color 0.2s ease;
-      margin-bottom: 8px;
-    }
-    .trailer-btn:hover {
-      background: linear-gradient(135deg, rgba(180, 0, 255, 0.35), rgba(255, 45, 149, 0.35));
-      border-color: rgba(255, 45, 149, 0.7);
-    }
-    .trailer-btn span.arrow { font-size: 1.1em; color: var(--vice-pink); }
-
-    /* ---------- АДАПТИВ ---------- */
-    @media (max-width: 480px) {
-      .vi-text { font-size: min(52vw, 34vh); }
-      .timer { gap: 8px; }
-      .time-unit { min-width: 55px; }
-      .info-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+  button{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:700;
+    letter-spacing:4px;font-size:15px;padding:14px 44px;border-radius:40px;
+    color:#05010f;background:linear-gradient(90deg,#00e5ff,#7a5cff);
+    border:none;box-shadow:0 0 22px rgba(0,229,255,.55),0 0 60px rgba(122,92,255,.35);
+    transition:transform .12s,box-shadow .2s}
+  button:active{transform:scale(.96)}
+  button:hover{box-shadow:0 0 30px rgba(0,229,255,.9),0 0 90px rgba(122,92,255,.6)}
+</style>
 </head>
 <body>
+<canvas id="c"></canvas>
+<div id="flash"></div>
 
-  <!-- ---------- ТАЙМЕР ---------- -->
-  <div class="countdown-section">
-    <div class="gta-title">Grand Theft Auto VI</div>
-
-    <div class="vi-block">
-      <span class="vi-text">VI</span>
-    </div>
-
-    <!-- Переключатель: До чего считаем? -->
-    <div class="target-selector">
-      <button class="target-btn active" data-target="pc">ПК-версия</button>
-      <button class="target-btn" data-target="online">GTA Online</button>
-    </div>
-
-    <div class="timer" id="timer">
-      <div class="time-unit">
-        <span class="time-value" id="days">000</span>
-        <span class="time-label">Дней</span>
-      </div>
-      <div class="time-unit">
-        <span class="time-value" id="hours">00</span>
-        <span class="time-label">Часов</span>
-      </div>
-      <div class="time-unit">
-        <span class="time-value" id="minutes">00</span>
-        <span class="time-label">Минут</span>
-      </div>
-      <div class="time-unit">
-        <span class="time-value" id="seconds">00</span>
-        <span class="time-label">Секунд</span>
-      </div>
-    </div>
-
-    <div class="until-label" id="until-label">До релиза на ПК (ожидаемо Q1 2027)</div>
-  </div>
-
-  <!-- ---------- ГАЙДЫ И ИНФОРМАЦИЯ ---------- -->
-  <div class="info-section">
-    <div class="info-grid">
-
-      <!-- ГАЙД: ДЕНЬГИ И СТАРТ -->
-      <div class="info-card">
-        <h2><span class="icon">💰</span> Как начать и поднять деньги</h2>
-        <ul>
-          <li><strong>Стартовый капитал:</strong> Не тратьте первые деньги на тюнинг. Инвестируйте в оружие и простую одежду для маскировки.</li>
-          <li><strong>Полицейские камеры:</strong> В игре есть носимые камеры на телах копов. Если вы попали в объектив, вас будут искать активнее — прячьте лицо.</li>
-          <li><strong>6-звёздный розыск:</strong> Теперь побег от полиции — это отдельная мини-игра. Меняйте машины и прячьтесь в переулках.</li>
-        </ul>
-        <div class="guide-tip">💡 Совет: Изучите систему «доверия» между Джейсоном и Люсией. Чем выше доверие, тем больше денег вы получите с каждого дела.</div>
-      </div>
-
-      <!-- ГАЙД: КАРТА И ИССЛЕДОВАНИЕ -->
-      <div class="info-card">
-        <h2><span class="icon">🗺️</span> Секреты Леониды</h2>
-        <p>Карта штата огромна. Чтобы не потеряться, используйте «Режим детектива» (нажмите L3 + R3). Он подсвечивает интерактивные предметы, луты и важные улики.</p>
-        <ul>
-          <li><strong>Флорида-Кис:</strong> Обязательно исследуйте острова — там спрятаны редкие лодки и уникальные транспортные средства.</li>
-          <li><strong>Эверглейдс:</strong> Болота опасны, но именно там находятся лучшие места для охоты на редких животных (если они есть в игре).</li>
-          <li><strong>Вайс-Сити:</strong> Не забывайте заходить в здания. Интерьеров стало в разы больше, и внутри часто лежат ценные вещи.</li>
-        </ul>
-      </div>
-
-      <!-- ГАЙД: ТРАНСПОРТ -->
-      <div class="info-card">
-        <h2><span class="icon">🚗</span> Транспорт и управление</h2>
-        <p>В игре более 200 подтверждённых машин, мотоциклов и лодок. Управление стало реалистичнее: машины нужно прогревать, а на поворотах — сбрасывать скорость.</p>
-        <ul>
-          <li><strong>Классы машин:</strong> Не пытайтесь уехать от спорткара на внедорожнике. Используйте класс транспорта под ситуацию.</li>
-          <li><strong>Камера:</strong> Нажмите «вниз» на крестовине + квадрат, чтобы переключить ракурс камеры (ближе/дальше).</li>
-          <li><strong>Лодки:</strong> В ГТА 6 водный транспорт играет огромную роль. Ищите причалы в Вайс-Сити и на Кис.</li>
-        </ul>
-      </div>
-
-      <!-- ГАЙД: ПЕРСОНАЖИ -->
-      <div class="info-card">
-        <h2><span class="icon">👥</span> Джейсон и Люсия</h2>
-        <p>Дуэт главных героев — это ядро истории. У каждого свои навыки: Джейсон сильнее в оружии и выживании, Люсия — в харизме и взломе.</p>
-        <ul>
-          <li><strong>Романы и отношения:</strong> Ваши действия влияют на их отношения. Проводите время вместе, чтобы открыть уникальные диалоги и миссии.</li>
-          <li><strong>Физическая форма:</strong> Персонажи могут набирать вес или терять форму. Следите за питанием и тренировками.</li>
-        </ul>
-        <div class="guide-tip">💡 Совет: История вдохновлена Бонни и Клайдом. Ожидайте, что доверие и предательство сыграют ключевую роль в финале.</div>
-      </div>
-
-      <!-- ИНФОРМАЦИЯ: ЧТО ДАЛЬШЕ -->
-      <div class="info-card">
-        <h2><span class="icon">🔮</span> Что нас ждёт в будущем?</h2>
-        <ul>
-          <li><strong>ПК-версия:</strong> Официально не анонсирована. Rockstar традиционно выпускает ПК-версии позже. Инсайдеры и аналитики называют окно <strong>Q1 2027</strong> (GamesBeat), хотя некоторые прогнозы сдвигают релиз к <strong>Q1 2028</strong>.</li>
-          <li><strong>GTA Online:</strong> Мультиплеер для GTA 6 ожидается не раньше конца 2027 года. Bloomberg сообщал, что онлайн появится «через год» после релиза.</li>
-          <li><strong>Сюжетные DLC:</strong> Официально не анонсированы. Rockstar пока молчит, но история GTA 5 намекает, что DLC может не быть вовсе.</li>
-        </ul>
-      </div>
-
-      <!-- ПОЛЕЗНЫЕ ССЫЛКИ -->
-      <div class="info-card">
-        <h2><span class="icon">🔗</span> Полезные ссылки</h2>
-        <a class="trailer-btn" href="https://www.rockstargames.com/VI" target="_blank" rel="noopener">Официальный сайт GTA VI <span class="arrow">→</span></a>
-        <a class="trailer-btn" href="https://www.rockstargames.com/VI/trailer-1" target="_blank" rel="noopener">Trailer 1 <span class="arrow">→</span></a>
-        <a class="trailer-btn" href="https://www.rockstargames.com/VI/trailer-2" target="_blank" rel="noopener">Trailer 2 <span class="arrow">→</span></a>
-      </div>
-
+<div id="ui">
+  <div id="top">
+    <div id="scoreBox"><span id="score">0</span><small>ОЧКИ</small></div>
+    <div>
+      <div id="coinBox"><span id="coins">0</span><small>МОНЕТЫ</small></div>
+      <div id="boardTag">[B] ДОСКА ГОТОВА</div>
     </div>
   </div>
+  <div id="bottom">
+    <div class="buff" id="bMagnet">🧲 МАГНИТ <span id="tMagnet"></span></div>
+    <div class="buff" id="bX2">×2 ОЧКИ <span id="tX2"></span></div>
+  </div>
+</div>
 
-  <script>
-    // --- ЛОГИКА ТАЙМЕРА ---
-    // Примечание: точная дата ПК-версии не объявлена, используется наиболее вероятный прогноз (Q1 2027).
-    // Для GTA Online используется ориентир "конец 2027 года" (на основе отчётов Bloomberg).
-    const TARGETS = {
-      pc: {
-        date: '2027-03-31T23:59:59', // Условный дедлайн Q1 2027
-        label: 'До релиза на ПК (ожидаемо Q1 2027)'
-      },
-      online: {
-        date: '2027-12-31T23:59:59', // Условный дедлайн "конец 2027"
-        label: 'До запуска GTA Online (ожидаемо конец 2027)'
-      }
-    };
+<div class="overlay" id="menu">
+  <h1>NEON<span>RUNNER</span></h1>
+  <div class="sub">БЕСКОНЕЧНЫЙ ЗАБЕГ</div>
+  <div class="keys">
+    <div><b>← →</b> / <b>A D</b> — сменить полосу</div>
+    <div><b>↑</b> / <b>W</b> / <b>ПРОБЕЛ</b> — прыжок</div>
+    <div><b>↓</b> / <b>S</b> — перекат (в воздухе — быстрое падение)</div>
+    <div><b>B</b> — доска (нужно 100 монет)</div>
+  </div>
+  <button id="btnStart">ИГРАТЬ</button>
+</div>
 
-    let currentTarget = 'pc';
-    let timerInterval;
+<div class="overlay hide" id="over">
+  <div class="sub">ЗАБЕГ ОКОНЧЕН</div>
+  <div class="big" id="goScore">0</div>
+  <div class="sub" id="goCoins">0 МОНЕТ</div>
+  <button id="btnRestart">ЕЩЁ РАЗ</button>
+</div>
 
-    const daysEl    = document.getElementById('days');
-    const hoursEl   = document.getElementById('hours');
-    const minutesEl = document.getElementById('minutes');
-    const secondsEl = document.getElementById('seconds');
-    const untilEl   = document.getElementById('until-label');
-    const targetBtns = document.querySelectorAll('.target-btn');
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
 
-    function pad(num, size) {
-      let s = String(num);
-      while (s.length < size) s = '0' + s;
-      return s;
+<script type="module">
+import * as THREE from 'three';
+
+/* ═══════════════════════════════════════════════════════════════
+   КОНСТАНТЫ
+   ═══════════════════════════════════════════════════════════════ */
+const LANE_X      = [-2, 0, 2];
+const SPAWN_Z     = -140;
+const DESPAWN_Z   = 16;
+
+const STAND_H     = 1.6;
+const ROLL_H      = 0.62;
+const ROLL_TIME   = 0.55;
+const GRAVITY     = -62;
+const JUMP_V      = 15.5;
+
+const BASE_SPEED  = 26;
+const MAX_SPEED   = 56;
+
+const SCORE_PER_SEC = 20;
+const COIN_SCORE    = 10;
+const BOARD_COST    = 100;
+
+const COIN_MAX      = 260;
+const OB_PER_TYPE   = 26;
+const PU_MAX        = 8;
+
+const MAGNET_TIME   = 8;
+const X2_TIME       = 10;
+
+const rnd      = Math.random;
+const randInt  = n => (rnd() * n) | 0;
+const clamp    = (v, a, b) => v < a ? a : v > b ? b : v;
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDERER / SCENE
+   ═══════════════════════════════════════════════════════════════ */
+const canvas   = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({
+  canvas, antialias: true, powerPreference: 'high-performance',
+  stencil: false, alpha: false
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x05010f, 1);
+
+const scene  = new THREE.Scene();
+scene.fog    = new THREE.Fog(0x05010f, 40, 150);
+
+const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(0, 4.3, 9.5);
+camera.lookAt(0, 1.3, -11);
+
+/* ═══════════════════════════════════════════════════════════════
+   ЗЕМЛЯ (1 draw call, неоновая сетка в шейдере)
+   ═══════════════════════════════════════════════════════════════ */
+const groundMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uScroll:   { value: 0 },
+    uFogColor: { value: new THREE.Color(0x05010f) },
+    uFogNear:  { value: 40 },
+    uFogFar:   { value: 150 }
+  },
+  vertexShader: /* glsl */`
+    varying vec3 vW;
+    varying float vD;
+    void main(){
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vW = wp.xyz;
+      vec4 mv = viewMatrix * wp;
+      vD = -mv.z;
+      gl_Position = projectionMatrix * mv;
+    }`,
+  fragmentShader: /* glsl */`
+    uniform float uScroll;
+    uniform vec3  uFogColor;
+    uniform float uFogNear;
+    uniform float uFogFar;
+    varying vec3  vW;
+    varying float vD;
+
+    void main(){
+      vec2 p = vec2(vW.x, vW.z - uScroll);
+      vec2 cs = p * 0.5;
+      vec2 f  = abs(fract(cs) - 0.5);
+      float db = 0.5 - min(f.x, f.y);
+
+      float w = 0.022 + vD * 0.0011;
+      float grid = 1.0 - smoothstep(0.0, w, db);
+
+      float ax = abs(vW.x);
+      float dl = min(abs(ax - 1.0), abs(ax - 3.0));
+      float lane = 1.0 - smoothstep(0.0, 0.055 + vD * 0.0008, dl);
+
+      vec3 col = vec3(0.42, 0.10, 1.00) * grid * 0.55;
+      col += vec3(0.00, 0.85, 1.00) * lane * 1.15;
+      col += vec3(0.10, 0.00, 0.25) * (1.0 - smoothstep(0.0, 12.0, abs(vW.x))) * 0.35;
+
+      float fog = smoothstep(uFogNear, uFogFar, vD);
+      col = mix(col, uFogColor, fog);
+      gl_FragColor = vec4(col, 1.0);
+    }`
+});
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(110, 420), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(0, 0, -170);
+scene.add(ground);
+
+/* ═══════════════════════════════════════════════════════════════
+   ИГРОК
+   ═══════════════════════════════════════════════════════════════ */
+const playerGroup = new THREE.Group();
+{
+  const boxGeo  = new THREE.BoxGeometry(0.8, 1, 0.8);
+  const body    = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+  const edges   = new THREE.LineSegments(
+    new THREE.EdgesGeometry(boxGeo),
+    new THREE.LineBasicMaterial({ color: 0xffffff })
+  );
+  playerGroup.add(body, edges);
+}
+scene.add(playerGroup);
+
+// «доска» (щит)
+const boardMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(1.05, 0.13, 1.75),
+  new THREE.MeshBasicMaterial({ color: 0x00ffc8 })
+);
+boardMesh.visible = false;
+scene.add(boardMesh);
+
+/* ═══════════════════════════════════════════════════════════════
+   МОНЕТЫ (InstancedMesh)
+   ═══════════════════════════════════════════════════════════════ */
+const coinGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.09, 8);
+coinGeo.rotateX(Math.PI / 2);
+
+const coinMesh = new THREE.InstancedMesh(
+  coinGeo,
+  new THREE.MeshBasicMaterial({ color: 0xffd21e }),
+  COIN_MAX
+);
+coinMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+coinMesh.frustumCulled = false;
+coinMesh.count = 0;
+scene.add(coinMesh);
+
+const coinsArr = new Array(COIN_MAX);
+for (let i = 0; i < COIN_MAX; i++)
+  coinsArr[i] = { active: false, x: 0, y: 0, z: 0, rot: 0 };
+
+/* ═══════════════════════════════════════════════════════════════
+   ПРЕПЯТСТВИЯ (3 InstancedMesh)
+   тип 0 — перекат (сверху), тип 1 — прыжок (снизу), тип 2 — обход
+   ═══════════════════════════════════════════════════════════════ */
+const OB_DEF = [
+  { w: 1.9, h: 1.5,  d: 0.6, cy: 1.90,  yMin: 1.15, yMax: 99 },  // ROLL
+  { w: 1.9, h: 0.85, d: 0.6, cy: 0.425, yMin: -1,   yMax: 0.85 },// JUMP
+  { w: 1.9, h: 3.0,  d: 0.6, cy: 1.50,  yMin: -1,   yMax: 99 }   // DODGE
+];
+
+const OB_COLORS = [0xb026ff, 0x00e5ff, 0xff2255];
+const obGeo = new THREE.BoxGeometry(1, 1, 1);
+
+const obMeshes = [];
+const obPools  = [];
+
+for (let t = 0; t < 3; t++) {
+  const m = new THREE.InstancedMesh(
+    obGeo,
+    new THREE.MeshBasicMaterial({ color: OB_COLORS[t] }),
+    OB_PER_TYPE
+  );
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  m.frustumCulled = false;
+  m.count = 0;
+  scene.add(m);
+  obMeshes.push(m);
+
+  const pool = new Array(OB_PER_TYPE);
+  for (let i = 0; i < OB_PER_TYPE; i++)
+    pool[i] = { active: false, x: 0, z: 0, lane: 0 };
+  obPools.push(pool);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   БОНУСЫ (InstancedMesh + instanceColor)
+   ═══════════════════════════════════════════════════════════════ */
+const puMesh = new THREE.InstancedMesh(
+  new THREE.OctahedronGeometry(0.45, 0),
+  new THREE.MeshBasicMaterial({ color: 0xffffff }),
+  PU_MAX
+);
+puMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+puMesh.frustumCulled = false;
+puMesh.count = 0;
+
+const _white = new THREE.Color(0xffffff);
+for (let i = 0; i < PU_MAX; i++) puMesh.setColorAt(i, _white);
+scene.add(puMesh);
+
+const PU_COLORS = [new THREE.Color(0xff2fb0), new THREE.Color(0xffd21e)];
+const puArr = new Array(PU_MAX);
+for (let i = 0; i < PU_MAX; i++)
+  puArr[i] = { active: false, x: 0, y: 0, z: 0, rot: 0, kind: 0, color: new THREE.Color() };
+
+/* ═══════════════════════════════════════════════════════════════
+   СОСТОЯНИЕ ИГРЫ
+   ═══════════════════════════════════════════════════════════════ */
+let gameState = 'menu';
+
+const player = {
+  lane: 1, x: 0, y: 0, vy: 0,
+  h: STAND_H, onGround: true,
+  rolling: false, rollTimer: 0
+};
+
+let score = 0, coins = 0, distance = 0, speed = BASE_SPEED;
+let magnetTimer = 0, x2Timer = 0, boardActive = false;
+let spawnAccum = 0, nextGap = 0;
+let boardFlash = 0;
+
+/* ═══════════════════════════════════════════════════════════════
+   ПУЛЫ / СПАВН
+   ═══════════════════════════════════════════════════════════════ */
+function isObstructed(x, z) {
+  for (let t = 0; t < 3; t++) {
+    const p = obPools[t];
+    for (let i = 0; i < OB_PER_TYPE; i++) {
+      const o = p[i];
+      if (o.active && Math.abs(o.z - z) < 1.6 && Math.abs(o.x - x) < 1.6) return true;
     }
+  }
+  return false;
+}
 
-    function updateCountdown() {
-      const targetData = TARGETS[currentTarget];
-      const targetDate = new Date(targetData.date).getTime();
-      const distance = targetDate - Date.now();
-
-      // Если время вышло (для теста можно поставить прошедшую дату)
-      if (distance <= 0) {
-        daysEl.textContent    = '000';
-        hoursEl.textContent   = '00';
-        minutesEl.textContent = '00';
-        secondsEl.textContent = '00';
-        untilEl.textContent   = 'СОБЫТИЕ УЖЕ НАСТУПИЛО!';
-        clearInterval(timerInterval);
-        return;
-      }
-
-      const days    = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours   = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      daysEl.textContent    = pad(days, 3);
-      hoursEl.textContent   = pad(hours, 2);
-      minutesEl.textContent = pad(minutes, 2);
-      secondsEl.textContent = pad(seconds, 2);
-      untilEl.textContent   = targetData.label;
+function spawnCoin(x, y, z) {
+  if (isObstructed(x, z)) return;
+  for (let i = 0; i < COIN_MAX; i++) {
+    const c = coinsArr[i];
+    if (!c.active) {
+      c.active = true;
+      c.x = x; c.y = y; c.z = z;
+      c.rot = rnd() * 6.2832;
+      return;
     }
+  }
+}
 
-    function startTimer(targetKey) {
-      currentTarget = targetKey;
-      clearInterval(timerInterval);
-      updateCountdown();
-      timerInterval = setInterval(updateCountdown, 1000);
+function spawnObstacle(type, lane, z) {
+  const pool = obPools[type];
+  for (let i = 0; i < OB_PER_TYPE; i++) {
+    const o = pool[i];
+    if (!o.active) {
+      o.active = true;
+      o.x = LANE_X[lane];
+      o.z = z;
+      o.lane = lane;
+      return;
     }
+  }
+}
 
-    // Обработка кликов по кнопкам переключения
-    targetBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        // Меняем активный класс
-        targetBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        // Запускаем таймер с новой целью
-        startTimer(btn.dataset.target);
-      });
+function spawnPowerup(kind, lane, z) {
+  for (let i = 0; i < PU_MAX; i++) {
+    const u = puArr[i];
+    if (!u.active) {
+      u.active = true;
+      u.kind = kind;
+      u.x = LANE_X[lane];
+      u.y = 1.1;
+      u.z = z;
+      u.rot = rnd() * 6.2832;
+      u.color.copy(PU_COLORS[kind]);
+      return;
+    }
+  }
+}
+
+/* ── паттерны ─────────────────────────────────────────────────── */
+function spawnPattern(z) {
+  const r = rnd();
+  let len = 0;
+
+  if (r < 0.62) {
+    /* одиночное препятствие + дорожка монет ПОСЛЕ него */
+    const lane = randInt(3);
+    const tr = rnd();
+    const type = tr < 0.34 ? 0 : (tr < 0.67 ? 1 : 2);
+
+    spawnObstacle(type, lane, z);
+
+    let coinLane = lane;
+    if (type === 2) { do { coinLane = randInt(3); } while (coinLane === lane); }
+
+    const n = 6 + randInt(5);
+    const startZ = z - 13;
+    for (let i = 0; i < n; i++) spawnCoin(LANE_X[coinLane], 0.9, startZ - i * 2.6);
+    len = 13 + n * 2.6;
+
+  } else if (r < 0.87) {
+    /* одинаковое препятствие на ВСЕХ трёх полосах + полоса монет */
+    const type = rnd() < 0.5 ? 0 : 1;
+    for (let l = 0; l < 3; l++) spawnObstacle(type, l, z);
+
+    const n = 5 + randInt(4);
+    const startZ = z - 17;
+    for (let l = 0; l < 3; l++)
+      for (let i = 0; i < n; i++)
+        spawnCoin(LANE_X[l], 0.9, startZ - i * 2.6);
+    len = 17 + n * 2.6;
+
+  } else {
+    /* волна монет */
+    const n = 10 + randInt(8);
+    for (let i = 0; i < n; i++) {
+      const lane = clamp(Math.round(1 + Math.sin(i * 0.55) * 1.1), 0, 2);
+      spawnCoin(LANE_X[lane], 0.9, z - i * 2.6);
+    }
+    len = n * 2.6;
+  }
+
+  if (rnd() < 0.15) {
+    spawnPowerup(rnd() < 0.5 ? 0 : 1, randInt(3), z - len - 8);
+    len += 10;
+  }
+  return len;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   УПРАВЛЕНИЕ
+   ═══════════════════════════════════════════════════════════════ */
+function tryLane(dir) {
+  if (gameState !== 'play') return;
+  const nl = player.lane + dir;
+  if (nl >= 0 && nl <= 2) player.lane = nl;
+}
+
+function tryJump() {
+  if (gameState !== 'play') return;
+  if (player.onGround) {
+    player.vy = JUMP_V;
+    player.onGround = false;
+    player.rolling = false;
+    player.rollTimer = 0;
+  }
+}
+
+function tryRoll() {
+  if (gameState !== 'play') return;
+  if (!player.onGround) player.vy = Math.min(player.vy, -46);   // быстрое падение
+  player.rolling = true;
+  player.rollTimer = ROLL_TIME;
+}
+
+function tryBoard() {
+  if (gameState !== 'play' || boardActive) return;
+  if (coins >= BOARD_COST) {
+    coins -= BOARD_COST;
+    boardActive = true;
+  }
+}
+
+addEventListener('keydown', e => {
+  switch (e.code) {
+    case 'ArrowLeft': case 'KeyA':  tryLane(-1); e.preventDefault(); break;
+    case 'ArrowRight': case 'KeyD': tryLane(1);  e.preventDefault(); break;
+    case 'ArrowUp': case 'KeyW': case 'Space': tryJump(); e.preventDefault(); break;
+    case 'ArrowDown': case 'KeyS': tryRoll(); e.preventDefault(); break;
+    case 'KeyB': tryBoard(); break;
+    case 'Enter': if (gameState !== 'play') startGame(); break;
+  }
+});
+
+/* тач */
+let tsX = 0, tsY = 0;
+canvas.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  tsX = t.clientX; tsY = t.clientY;
+}, { passive: true });
+
+canvas.addEventListener('touchend', e => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - tsX, dy = t.clientY - tsY;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if (Math.max(adx, ady) < 26) { tryJump(); return; }
+  if (adx > ady) tryLane(dx > 0 ? 1 : -1);
+  else if (dy > 0) tryRoll();
+  else tryJump();
+}, { passive: true });
+
+/* ═══════════════════════════════════════════════════════════════
+   HUD
+   ═══════════════════════════════════════════════════════════════ */
+const elScore   = document.getElementById('score');
+const elCoins   = document.getElementById('coins');
+const elBoard   = document.getElementById('boardTag');
+const elMagnet  = document.getElementById('bMagnet');
+const elX2      = document.getElementById('bX2');
+const elTMagnet = document.getElementById('tMagnet');
+const elTX2     = document.getElementById('tX2');
+const elFlash   = document.getElementById('flash');
+const elMenu    = document.getElementById('menu');
+const elOver    = document.getElementById('over');
+const elGoScore = document.getElementById('goScore');
+const elGoCoins = document.getElementById('goCoins');
+
+let hudTimer = 0;
+
+function updateHUD(dt) {
+  hudTimer += dt;
+  if (hudTimer < 0.07) return;
+  hudTimer = 0;
+
+  elScore.textContent = Math.floor(score);
+  elCoins.textContent = coins;
+
+  const canBoard = coins >= BOARD_COST && !boardActive;
+  elBoard.classList.toggle('on', canBoard);
+
+  if (magnetTimer > 0) {
+    elMagnet.classList.add('on');
+    elTMagnet.textContent = magnetTimer.toFixed(1) + 'с';
+  } else elMagnet.classList.remove('on');
+
+  if (x2Timer > 0) {
+    elX2.classList.add('on');
+    elTX2.textContent = x2Timer.toFixed(1) + 'с';
+  } else elX2.classList.remove('on');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   СТАРТ / РЕСТАРТ / КОНЕЦ
+   ═══════════════════════════════════════════════════════════════ */
+function resetGame() {
+  for (let i = 0; i < COIN_MAX; i++) coinsArr[i].active = false;
+  for (let t = 0; t < 3; t++)
+    for (let i = 0; i < OB_PER_TYPE; i++) obPools[t][i].active = false;
+  for (let i = 0; i < PU_MAX; i++) puArr[i].active = false;
+
+  player.lane = 1; player.x = 0; player.y = 0; player.vy = 0;
+  player.h = STAND_H; player.onGround = true;
+  player.rolling = false; player.rollTimer = 0;
+
+  score = 0; coins = 0; distance = 0; speed = BASE_SPEED;
+  magnetTimer = 0; x2Timer = 0; boardActive = false;
+  spawnAccum = 0; nextGap = 0; boardFlash = 0;
+
+  groundMat.uniforms.uScroll.value = 0;
+
+  elOver.classList.add('hide');
+  elMenu.classList.add('hide');
+  boardMesh.visible = false;
+}
+
+function startGame() {
+  resetGame();
+  gameState = 'play';
+  lastTime = performance.now();
+}
+
+function gameOver() {
+  gameState = 'over';
+  elGoScore.textContent = Math.floor(score).toLocaleString('ru-RU');
+  elGoCoins.textContent = coins + ' МОНЕТ';
+  elOver.classList.remove('hide');
+  elBoard.classList.remove('on');
+  elMagnet.classList.remove('on');
+  elX2.classList.remove('on');
+}
+
+document.getElementById('btnStart').addEventListener('click', startGame);
+document.getElementById('btnRestart').addEventListener('click', startGame);
+
+/* ═══════════════════════════════════════════════════════════════
+   ЛОГИКА
+   ═══════════════════════════════════════════════════════════════ */
+function onHit() {
+  if (boardActive) {
+    boardActive = false;
+    boardMesh.visible = false;
+    boardFlash = 1;
+    elFlash.style.transition = 'none';
+    elFlash.style.opacity = '0.55';
+    requestAnimationFrame(() => {
+      elFlash.style.transition = 'opacity .45s';
+      elFlash.style.opacity = '0';
     });
+    for (let t = 0; t < 3; t++) {
+      const p = obPools[t];
+      for (let i = 0; i < OB_PER_TYPE; i++)
+        if (p[i].active && Math.abs(p[i].z) < 2.2) p[i].active = false;
+    }
+    return;
+  }
+  gameOver();
+}
 
-    // Первый запуск
-    startTimer('pc');
-  </script>
+function update(dt) {
+  /* ── скорость / дистанция ── */
+  speed = Math.min(BASE_SPEED + distance * 0.0125, MAX_SPEED);
+  const move = speed * dt;
+  distance += move;
+  groundMat.uniforms.uScroll.value += move;
 
+  /* ── очки за время ── */
+  score += SCORE_PER_SEC * dt * (x2Timer > 0 ? 2 : 1);
+
+  /* ── таймеры бонусов ── */
+  if (magnetTimer > 0) magnetTimer -= dt;
+  if (x2Timer > 0)     x2Timer -= dt;
+
+  /* ═══ ИГРОК ═══ */
+  const targetX = LANE_X[player.lane];
+  player.x += (targetX - player.x) * (1 - Math.exp(-17 * dt));
+
+  if (!player.onGround) {
+    player.vy += GRAVITY * dt;
+    player.y  += player.vy * dt;
+    if (player.y <= 0) { player.y = 0; player.vy = 0; player.onGround = true; }
+  }
+
+  if (player.rolling) {
+    player.rollTimer -= dt;
+    if (player.rollTimer <= 0) player.rolling = false;
+  }
+  player.h = player.rolling ? ROLL_H : STAND_H;
+
+  const pTop    = player.y + player.h;
+  const pBottom = player.y;
+  const pCenterY = player.y + player.h * 0.5;
+
+  /* ═══ ПРЕПЯТСТВИЯ ═══ */
+  for (let t = 0; t < 3; t++) {
+    const def  = OB_DEF[t];
+    const pool = obPools[t];
+
+    for (let i = 0; i < OB_PER_TYPE; i++) {
+      const o = pool[i];
+      if (!o.active) continue;
+
+      o.z += move;
+      if (o.z > DESPAWN_Z) { o.active = false; continue; }
+
+      /* коллизия: z-окно 2.0 > макс. шага (56/30 = 1.87) — туннелирование исключено */
+      if (o.z < -1.0 || o.z > 1.0) continue;
+      if (Math.abs(o.x - player.x) > 1.15) continue;
+
+      let hit = false;
+      if (t === 0)      hit = pTop > def.yMin;       // перекат
+      else if (t === 1) hit = pBottom < def.yMax;    // прыжок
+      else              hit = true;                  // обход
+
+      if (hit) { o.active = false; onHit(); return; }
+    }
+  }
+
+  /* ═══ МОНЕТЫ ═══ */
+  const magnetOn = magnetTimer > 0;
+  for (let i = 0; i < COIN_MAX; i++) {
+    const c = coinsArr[i];
+    if (!c.active) continue;
+
+    c.z += move;
+    c.rot += dt * 5.5;
+
+    if (c.z > DESPAWN_Z) { c.active = false; continue; }
+
+    if (magnetOn) {
+      const dx = player.x - c.x;
+      const dy = pCenterY - c.y;
+      const dz = -c.z;
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < 110) {
+        const inv = 1 / Math.sqrt(d2 + 0.0001);
+        const pull = 62 * dt;
+        c.x += dx * inv * pull;
+        c.y += dy * inv * pull;
+        c.z += dz * inv * pull;
+      }
+    }
+
+    if (c.z > -1.25 && c.z < 1.25 &&
+        Math.abs(c.x - player.x) < 1.05 &&
+        Math.abs(c.y - pCenterY) < 1.15) {
+      c.active = false;
+      coins++;
+      score += COIN_SCORE * (x2Timer > 0 ? 2 : 1);
+    }
+  }
+
+  /* ═══ БОНУСЫ ═══ */
+  for (let i = 0; i < PU_MAX; i++) {
+    const u = puArr[i];
+    if (!u.active) continue;
+
+    u.z += move;
+    u.rot += dt * 3;
+    u.y = 1.1 + Math.sin(u.rot * 2) * 0.15;
+
+    if (u.z > DESPAWN_Z) { u.active = false; continue; }
+
+    if (u.z > -1.4 && u.z < 1.4 &&
+        Math.abs(u.x - player.x) < 1.2 &&
+        Math.abs(u.y - pCenterY) < 1.5) {
+      u.active = false;
+      if (u.kind === 0) magnetTimer = MAGNET_TIME;
+      else              x2Timer = X2_TIME;
+    }
+  }
+
+  /* ═══ СПАВН ПАТТЕРНОВ ═══ */
+  spawnAccum += move;
+  if (spawnAccum >= nextGap) {
+    spawnAccum = 0;
+    const len = spawnPattern(SPAWN_Z);
+    nextGap = len + 26 + speed * 0.35;
+  }
+
+  /* ═══ ВИЗУАЛ ИГРОКА ═══ */
+  const sx = 1 + (1 - player.h / STAND_H) * 0.45;
+  playerGroup.position.set(player.x, player.y + player.h * 0.5, 0);
+  playerGroup.scale.set(sx, player.h, sx);
+
+  boardMesh.visible = boardActive;
+  if (boardActive) {
+    boardMesh.position.set(player.x, player.y + 0.07, 0);
+    boardMesh.rotation.y = performance.now() * 0.002;
+  }
+
+  updateHUD(dt);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   РЕНДЕР ИНСТАНСОВ
+   ═══════════════════════════════════════════════════════════════ */
+const _m4 = new THREE.Matrix4();
+
+function renderInstances() {
+  /* монеты */
+  let n = 0;
+  for (let i = 0; i < COIN_MAX; i++) {
+    const c = coinsArr[i];
+    if (!c.active) continue;
+    _m4.makeRotationY(c.rot);
+    _m4.setPosition(c.x, c.y, c.z);
+    coinMesh.setMatrixAt(n++, _m4);
+  }
+  coinMesh.count = n;
+  if (n) coinMesh.instanceMatrix.needsUpdate = true;
+
+  /* препятствия */
+  for (let t = 0; t < 3; t++) {
+    const def  = OB_DEF[t];
+    const pool = obPools[t];
+    const mesh = obMeshes[t];
+    let k = 0;
+    for (let i = 0; i < OB_PER_TYPE; i++) {
+      const o = pool[i];
+      if (!o.active) continue;
+      _m4.makeScale(def.w, def.h, def.d);
+      _m4.setPosition(o.x, def.cy, o.z);
+      mesh.setMatrixAt(k++, _m4);
+    }
+    mesh.count = k;
+    if (k) mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /* бонусы */
+  let p = 0;
+  for (let i = 0; i < PU_MAX; i++) {
+    const u = puArr[i];
+    if (!u.active) continue;
+    _m4.makeRotationY(u.rot);
+    _m4.setPosition(u.x, u.y, u.z);
+    puMesh.setMatrixAt(p, _m4);
+    puMesh.setColorAt(p, u.color);
+    p++;
+  }
+  puMesh.count = p;
+  if (p) {
+    puMesh.instanceMatrix.needsUpdate = true;
+    puMesh.instanceColor.needsUpdate = true;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ГЛАВНЫЙ ЦИКЛ
+   ═══════════════════════════════════════════════════════════════ */
+let lastTime = performance.now();
+const MAX_DT = 1 / 30;          // защита от туннелирования и лагов
+
+function loop(now) {
+  requestAnimationFrame(loop);
+
+  let dt = (now - lastTime) / 1000;
+  lastTime = now;
+  if (dt > MAX_DT) dt = MAX_DT;
+  if (dt < 0) dt = 0;
+
+  if (gameState === 'play') {
+    update(dt);
+  } else {
+    /* медленная прокрутка земли в меню */
+    groundMat.uniforms.uScroll.value += dt * 9;
+    boardMesh.visible = false;
+    playerGroup.position.set(player.x, player.y + player.h * 0.5, 0);
+  }
+
+  renderInstances();
+  renderer.render(scene, camera);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESIZE
+   ═══════════════════════════════════════════════════════════════ */
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
