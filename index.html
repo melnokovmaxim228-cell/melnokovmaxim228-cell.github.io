@@ -3,17 +3,21 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>NEON RUNNER v1.1.0</title>
+<title>NEON RUNNER v1.2.0</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{width:100%;height:100%;overflow:hidden;background:#05010f;
     font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
-    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+    touch-action:none} /* Отключаем скролл и зум страницы */
+
   #c{display:block;width:100%;height:100%;touch-action:none}
 
   #ui{position:fixed;inset:0;pointer-events:none;padding:14px;
       display:flex;flex-direction:column;justify-content:space-between;
-      text-shadow:0 0 10px currentColor,0 0 30px currentColor}
+      text-shadow:0 0 10px currentColor,0 0 30px currentColor;
+      padding-top:max(14px, env(safe-area-inset-top));
+      padding-bottom:max(14px, env(safe-area-inset-bottom))}
 
   #top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
   #scoreBox{color:#00e5ff;font-size:clamp(22px,5vw,40px);font-weight:700;letter-spacing:2px;line-height:1}
@@ -37,7 +41,7 @@
     mix-blend-mode:screen;transition:opacity .35s}
 
   /* ── кнопка паузы ── */
-  #btnPause{position:fixed;top:14px;left:50%;transform:translateX(-50%);
+  #btnPause{position:fixed;top:max(14px, env(safe-area-inset-top));left:50%;transform:translateX(-50%);
     width:44px;height:44px;border-radius:50%;
     background:rgba(0,229,255,.08);border:1px solid #00e5ff;color:#00e5ff;
     font-size:18px;font-family:inherit;cursor:pointer;z-index:8;
@@ -47,47 +51,60 @@
   #btnPause:hover{background:rgba(0,229,255,.2);box-shadow:0 0 24px rgba(0,229,255,.8)}
   #btnPause:active{transform:translateX(-50%) scale(.94)}
 
-  /* ── оверлеи ── */
+  /* ── оверлеи и карточки ── */
   .overlay{position:fixed;inset:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;
-    background:radial-gradient(ellipse at center,rgba(20,0,45,.75),rgba(5,1,15,.96));
-    backdrop-filter:blur(3px);transition:opacity .3s;z-index:10}
+    align-items:center;justify-content:center;padding:20px;text-align:center;
+    background:rgba(5,1,15,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    transition:opacity .3s;z-index:10;padding-bottom:max(20px, env(safe-area-inset-bottom))}
   .overlay.hide{opacity:0;pointer-events:none}
 
-  h1{font-size:clamp(30px,9vw,64px);letter-spacing:6px;font-weight:800;
-     color:#00e5ff;text-shadow:0 0 12px #00e5ff,0 0 46px #0088ff;line-height:.95}
-  h1 span{display:block;color:#ff2fb0;text-shadow:0 0 12px #ff2fb0,0 0 46px #a0006e}
-  .sub{font-size:11px;letter-spacing:4px;color:#7a5cff;opacity:.8}
-  .keys{font-size:12px;line-height:2;color:#b9a8ff;letter-spacing:1px;opacity:.85}
-  .keys b{color:#00e5ff}
-  .big{font-size:clamp(28px,7vw,48px);color:#ffd21e;font-weight:800;
-       text-shadow:0 0 14px #ffd21e,0 0 40px #a06a00}
+  .menu-card{
+    background:rgba(15, 5, 30, 0.6);
+    border:1px solid rgba(0, 229, 255, 0.25);
+    border-radius:24px;
+    padding:32px 24px;
+    box-shadow:0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.05);
+    display:flex;flex-direction:column;align-items:center;gap:20px;
+    max-width:380px;width:100%;position:relative;
+  }
 
+  h1{font-size:clamp(28px,9vw,48px);letter-spacing:4px;font-weight:800;
+     color:#00e5ff;text-shadow:0 0 12px #00e5ff,0 0 46px #0088ff;line-height:1.1;white-space:nowrap}
+  h1 span{color:#ff2fb0;text-shadow:0 0 12px #ff2fb0,0 0 46px #a0006e}
+  .sub{font-size:11px;letter-spacing:4px;color:#7a5cff;opacity:.8}
+  .keys{font-size:11px;line-height:1.8;color:#b9a8ff;letter-spacing:1px;opacity:.85;text-align:left;margin:10px 0}
+  .keys b{color:#00e5ff}
+  .big{font-size:clamp(32px,10vw,64px);color:#ffd21e;font-weight:800;
+       text-shadow:0 0 14px #ffd21e,0 0 40px #a06a00;line-height:1}
+
+  .btn-group{display:flex;flex-direction:column;gap:12px;width:100%;margin-top:10px}
   button.main{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:700;
-    letter-spacing:4px;font-size:15px;padding:14px 44px;border-radius:40px;
+    letter-spacing:2px;font-size:14px;padding:16px 20px;border-radius:16px;
     color:#05010f;background:linear-gradient(90deg,#00e5ff,#7a5cff);
-    border:none;box-shadow:0 0 22px rgba(0,229,255,.55),0 0 60px rgba(122,92,255,.35);
-    transition:transform .12s,box-shadow .2s}
-  button.main:active{transform:scale(.96)}
-  button.main:hover{box-shadow:0 0 30px rgba(0,229,255,.9),0 0 90px rgba(122,92,255,.6)}
+    border:none;box-shadow:0 0 20px rgba(0,229,255,.4);width:100%;
+    transition:transform .12s,box-shadow .2s;-webkit-tap-highlight-color:transparent}
+  button.main:active{transform:scale(.97)}
+  
+  button.secondary{background:transparent;border:1px solid rgba(122,92,255,.6);color:#b9a8ff;box-shadow:none}
+  button.secondary:active{background:rgba(122,92,255,.15)}
 
   /* ── громкость ── */
-  .vol-control{display:flex;flex-direction:column;gap:10px;align-items:center;
-    pointer-events:auto;color:#00e5ff;font-size:11px;letter-spacing:3px;margin-top:6px}
-  .vol-control input[type=range]{width:min(280px,70vw);height:4px;
-    -webkit-appearance:none;appearance:none;outline:none;border-radius:2px;
+  .vol-control{display:flex;flex-direction:column;gap:12px;align-items:center;
+    pointer-events:auto;color:#00e5ff;font-size:11px;letter-spacing:3px;width:100%}
+  .vol-control input[type=range]{width:100%;height:6px;
+    -webkit-appearance:none;appearance:none;outline:none;border-radius:3px;
     background:linear-gradient(90deg,#00e5ff 0%,#7a5cff 100%);
-    box-shadow:0 0 10px rgba(0,229,255,.5);cursor:pointer}
+    box-shadow:0 0 10px rgba(0,229,255,.4);cursor:pointer}
   .vol-control input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
-    width:20px;height:20px;border-radius:50%;background:#00e5ff;
-    box-shadow:0 0 14px #00e5ff;border:2px solid #fff;cursor:pointer}
-  .vol-control input[type=range]::-moz-range-thumb{width:18px;height:18px;
+    width:24px;height:24px;border-radius:50%;background:#00e5ff;
+    box-shadow:0 0 14px #00e5ff;border:3px solid #fff;cursor:pointer}
+  .vol-control input[type=range]::-moz-range-thumb{width:20px;height:20px;
     border-radius:50%;background:#00e5ff;box-shadow:0 0 14px #00e5ff;
-    border:2px solid #fff;cursor:pointer}
+    border:3px solid #fff;cursor:pointer}
   .vol-val{color:#ffd21e;font-weight:700;font-size:14px;letter-spacing:1px;
     min-width:56px;text-align:center}
   .ver{position:absolute;bottom:20px;left:0;right:0;text-align:center;
-    font-size:10px;letter-spacing:3px;color:#7a5cff;opacity:.7;pointer-events:none}
+    font-size:10px;letter-spacing:3px;color:#7a5cff;opacity:.5;pointer-events:none}
 </style>
 </head>
 <body>
@@ -111,36 +128,49 @@
 
 <!-- МЕНЮ -->
 <div class="overlay" id="menu">
-  <h1>NEON<span>RUNNER</span></h1>
-  <div class="sub">БЕСКОНЕЧНЫЙ ЗАБЕГ</div>
-  <div class="keys">
-    <div><b>← →</b> / <b>A D</b> — сменить полосу</div>
-    <div><b>↑</b> / <b>W</b> / <b>ПРОБЕЛ</b> — прыжок</div>
-    <div><b>↓</b> / <b>S</b> — перекат (в воздухе — быстрое падение)</div>
-    <div><b>B</b> — доска (100 монет) · <b>P</b> / <b>Esc</b> — пауза</div>
+  <div class="menu-card">
+    <h1>NEON<span>RUNNER</span></h1>
+    <div class="sub">БЕСКОНЕЧНЫЙ ЗАБЕГ</div>
+    <div class="keys">
+      <div><b>Свайп</b> влево/вправо — полоса</div>
+      <div><b>Тап</b> или <b>Свайп вверх</b> — прыжок</div>
+      <div><b>Свайп вниз</b> — перекат</div>
+      <div><b>Кнопка ⏸</b> / <b>P</b> — пауза</div>
+    </div>
+    <div class="btn-group">
+      <button class="main" id="btnStart">ИГРАТЬ</button>
+    </div>
+    <div class="ver" data-ver></div>
   </div>
-  <button class="main" id="btnStart">ИГРАТЬ</button>
-  <div class="ver" data-ver></div>
 </div>
 
 <!-- ПАУЗА -->
 <div class="overlay hide" id="pause">
-  <h1>ПАУ<span>ЗА</span></h1>
-  <div class="vol-control">
-    <label for="vol">ГРОМКОСТЬ</label>
-    <input type="range" id="vol" min="0" max="100" value="70">
-    <span class="vol-val" id="volVal">70%</span>
+  <div class="menu-card">
+    <h1>ПАУЗА</h1>
+    <div class="vol-control">
+      <label for="vol">ГРОМКОСТЬ</label>
+      <input type="range" id="vol" min="0" max="100" value="70">
+      <span class="vol-val" id="volVal">70%</span>
+    </div>
+    <div class="btn-group">
+      <button class="main" id="btnResume">ПРОДОЛЖИТЬ</button>
+      <button class="main secondary" id="btnQuit">В МЕНЮ</button>
+    </div>
+    <div class="ver" data-ver></div>
   </div>
-  <button class="main" id="btnResume">ПРОДОЛЖИТЬ</button>
-  <div class="ver" data-ver></div>
 </div>
 
 <!-- КОНЕЦ -->
 <div class="overlay hide" id="over">
-  <div class="sub">ЗАБЕГ ОКОНЧЕН</div>
-  <div class="big" id="goScore">0</div>
-  <div class="sub" id="goCoins">0 МОНЕТ</div>
-  <button class="main" id="btnRestart">ЕЩЁ РАЗ</button>
+  <div class="menu-card">
+    <div class="sub">ЗАБЕГ ОКОНЧЕН</div>
+    <div class="big" id="goScore">0</div>
+    <div class="sub" id="goCoins">0 МОНЕТ</div>
+    <div class="btn-group">
+      <button class="main" id="btnRestart">ЕЩЁ РАЗ</button>
+    </div>
+  </div>
 </div>
 
 <script type="importmap">
@@ -152,12 +182,8 @@ import * as THREE from 'three';
 
 /* ═══════════════════════════════════════════════════════════════
    ВЕРСИОНИРОВАНИЕ (semver: MAJOR.MINOR.PATCH)
-   • PATCH  x.x.N  — правки, фиксы
-   • MINOR  x.N.0  — новые фичи
-   • MAJOR  N.0.0  — крупные переработки
-   Обновляется автоматически с каждым релизом.
    ═══════════════════════════════════════════════════════════════ */
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 document.querySelectorAll('[data-ver]').forEach(el => el.textContent = 'v' + VERSION);
 
 /* ═══════════════════════════════════════════════════════════════
@@ -192,7 +218,7 @@ const randInt  = n => (rnd() * n) | 0;
 const clamp    = (v, a, b) => v < a ? a : v > b ? b : v;
 
 /* ═══════════════════════════════════════════════════════════════
-   ЗВУК (Web Audio — процедурные SFX, без внешних файлов)
+   ЗВУК
    ═══════════════════════════════════════════════════════════════ */
 let audioCtx  = null;
 let masterGain = null;
@@ -515,7 +541,6 @@ function spawnPowerup(kind, lane, z) {
   }
 }
 
-/* ── паттерны (плотность повышена) ───────────────────────────── */
 function spawnPattern(z) {
   const r = rnd();
   let len = 0;
@@ -615,21 +640,44 @@ addEventListener('keydown', e => {
   }
 });
 
-/* тач */
+/* ── ТАЧ-УПРАВЛЕНИЕ НА ВЕСЬ ЭКРАН ── */
 let tsX = 0, tsY = 0;
-canvas.addEventListener('touchstart', e => {
+
+// Блокируем скролл и зум при игре
+document.addEventListener('touchmove', e => {
+  if (gameState === 'play') e.preventDefault();
+}, { passive: false });
+
+// Слушаем весь экран, а не только canvas
+window.addEventListener('touchstart', e => {
+  if (gameState !== 'play') return;
+  // Игнорируем тапы по кнопкам UI (например, кнопка паузы)
+  if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
   const t = e.changedTouches[0];
   tsX = t.clientX; tsY = t.clientY;
 }, { passive: true });
 
-canvas.addEventListener('touchend', e => {
+window.addEventListener('touchend', e => {
+  if (gameState !== 'play') return;
+  if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+  
   const t = e.changedTouches[0];
   const dx = t.clientX - tsX, dy = t.clientY - tsY;
   const adx = Math.abs(dx), ady = Math.abs(dy);
-  if (Math.max(adx, ady) < 26) { tryJump(); return; }
-  if (adx > ady) tryLane(dx > 0 ? 1 : -1);
-  else if (dy > 0) tryRoll();
-  else tryJump();
+
+  // Короткий тап — прыжок
+  if (Math.max(adx, ady) < 30) { 
+    tryJump(); 
+    return; 
+  }
+  
+  // Свайпы
+  if (adx > ady) {
+    tryLane(dx > 0 ? 1 : -1);
+  } else {
+    if (dy > 0) tryRoll();
+    else tryJump(); // Свайп вверх тоже прыжок
+  }
 }, { passive: true });
 
 /* ═══════════════════════════════════════════════════════════════
@@ -652,7 +700,6 @@ const elBtnPause  = document.getElementById('btnPause');
 const elVol       = document.getElementById('vol');
 const elVolVal    = document.getElementById('volVal');
 
-/* инициализация ползунка громкости */
 elVol.value = Math.round(volume * 100);
 elVolVal.textContent = Math.round(volume * 100) + '%';
 
@@ -709,8 +756,19 @@ function resumeGame() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
 
+function quitToMenu() {
+  if (gameState !== 'paused') return;
+  gameState = 'menu';
+  elPause.classList.add('hide');
+  elMenu.classList.remove('hide');
+  elBtnPause.style.display = 'none';
+  resetGame();
+  SFX.click();
+}
+
 elBtnPause.addEventListener('click', pauseGame);
 document.getElementById('btnResume').addEventListener('click', resumeGame);
+document.getElementById('btnQuit').addEventListener('click', quitToMenu);
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && gameState === 'play') pauseGame();
@@ -736,8 +794,6 @@ function resetGame() {
   groundMat.uniforms.uScroll.value = 0;
 
   elOver.classList.add('hide');
-  elMenu.classList.add('hide');
-  elPause.classList.add('hide');
   boardMesh.visible = false;
 }
 
@@ -746,6 +802,9 @@ function startGame() {
   SFX.click();
   resetGame();
   gameState = 'play';
+  elMenu.classList.add('hide');
+  elOver.classList.add('hide');
+  elPause.classList.add('hide');
   elBtnPause.style.display = 'flex';
   lastTime = performance.now();
 }
@@ -901,7 +960,7 @@ function update(dt) {
   if (spawnAccum >= nextGap) {
     spawnAccum = 0;
     const len = spawnPattern(SPAWN_Z);
-    nextGap = len + 8 + speed * 0.1;    // высокая плотность
+    nextGap = len + 8 + speed * 0.1;
   }
 
   /* ── визуал игрока ── */
