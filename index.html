@@ -397,36 +397,36 @@ function spawnPattern(z) {
     let coinLane = lane;
     if (type === 2) { do { coinLane = randInt(3); } while (coinLane === lane); }
 
-    const n = 6 + randInt(5);
-    const startZ = z - 13;
-    for (let i = 0; i < n; i++) spawnCoin(LANE_X[coinLane], 0.9, startZ - i * 2.6);
-    len = 13 + n * 2.6;
+    const n = 4 + randInt(4);          // 4–7 монет (было 6–10)
+    const startZ = z - 11;             // короче «хвост» (было 13)
+    for (let i = 0; i < n; i++) spawnCoin(LANE_X[coinLane], 0.9, startZ - i * 2.4);
+    len = 11 + (n - 1) * 2.4;
 
   } else if (r < 0.87) {
     /* одинаковое препятствие на ВСЕХ трёх полосах + полоса монет */
     const type = rnd() < 0.5 ? 0 : 1;
     for (let l = 0; l < 3; l++) spawnObstacle(type, l, z);
 
-    const n = 5 + randInt(4);
-    const startZ = z - 17;
+    const n = 3 + randInt(3);          // 3–5 монет на дорожку (было 5–8)
+    const startZ = z - 14;             // (было 17)
     for (let l = 0; l < 3; l++)
       for (let i = 0; i < n; i++)
-        spawnCoin(LANE_X[l], 0.9, startZ - i * 2.6);
-    len = 17 + n * 2.6;
+        spawnCoin(LANE_X[l], 0.9, startZ - i * 2.4);
+    len = 14 + (n - 1) * 2.4;
 
   } else {
     /* волна монет */
-    const n = 10 + randInt(8);
+    const n = 7 + randInt(6);          // 7–12 (было 10–17)
     for (let i = 0; i < n; i++) {
       const lane = clamp(Math.round(1 + Math.sin(i * 0.55) * 1.1), 0, 2);
-      spawnCoin(LANE_X[lane], 0.9, z - i * 2.6);
+      spawnCoin(LANE_X[lane], 0.9, z - i * 2.4);
     }
-    len = n * 2.6;
+    len = (n - 1) * 2.4;
   }
 
   if (rnd() < 0.15) {
-    spawnPowerup(rnd() < 0.5 ? 0 : 1, randInt(3), z - len - 8);
-    len += 10;
+    spawnPowerup(rnd() < 0.5 ? 0 : 1, randInt(3), z - len - 6);
+    len += 6;
   }
   return len;
 }
@@ -718,7 +718,8 @@ function update(dt) {
   if (spawnAccum >= nextGap) {
     spawnAccum = 0;
     const len = spawnPattern(SPAWN_Z);
-    nextGap = len + 26 + speed * 0.35;
+    /* ПЛОТНОСТЬ: было len + 26 + speed*0.35 → стало len + 8 + speed*0.1 */
+    nextGap = len + 8 + speed * 0.1;
   }
 
   /* ═══ ВИЗУАЛ ИГРОКА ═══ */
