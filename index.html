@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>NEON RUNNER</title>
+<title>NEON RUNNER v1.1.0</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{width:100%;height:100%;overflow:hidden;background:#05010f;
@@ -36,6 +36,18 @@
   #flash{position:fixed;inset:0;pointer-events:none;background:#00ffc8;opacity:0;
     mix-blend-mode:screen;transition:opacity .35s}
 
+  /* ── кнопка паузы ── */
+  #btnPause{position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    width:44px;height:44px;border-radius:50%;
+    background:rgba(0,229,255,.08);border:1px solid #00e5ff;color:#00e5ff;
+    font-size:18px;font-family:inherit;cursor:pointer;z-index:8;
+    display:none;align-items:center;justify-content:center;
+    box-shadow:0 0 12px rgba(0,229,255,.4),inset 0 0 10px rgba(0,229,255,.1);
+    transition:all .15s;-webkit-tap-highlight-color:transparent}
+  #btnPause:hover{background:rgba(0,229,255,.2);box-shadow:0 0 24px rgba(0,229,255,.8)}
+  #btnPause:active{transform:translateX(-50%) scale(.94)}
+
+  /* ── оверлеи ── */
   .overlay{position:fixed;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center;
     background:radial-gradient(ellipse at center,rgba(20,0,45,.75),rgba(5,1,15,.96));
@@ -51,18 +63,37 @@
   .big{font-size:clamp(28px,7vw,48px);color:#ffd21e;font-weight:800;
        text-shadow:0 0 14px #ffd21e,0 0 40px #a06a00}
 
-  button{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:700;
+  button.main{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:700;
     letter-spacing:4px;font-size:15px;padding:14px 44px;border-radius:40px;
     color:#05010f;background:linear-gradient(90deg,#00e5ff,#7a5cff);
     border:none;box-shadow:0 0 22px rgba(0,229,255,.55),0 0 60px rgba(122,92,255,.35);
     transition:transform .12s,box-shadow .2s}
-  button:active{transform:scale(.96)}
-  button:hover{box-shadow:0 0 30px rgba(0,229,255,.9),0 0 90px rgba(122,92,255,.6)}
+  button.main:active{transform:scale(.96)}
+  button.main:hover{box-shadow:0 0 30px rgba(0,229,255,.9),0 0 90px rgba(122,92,255,.6)}
+
+  /* ── громкость ── */
+  .vol-control{display:flex;flex-direction:column;gap:10px;align-items:center;
+    pointer-events:auto;color:#00e5ff;font-size:11px;letter-spacing:3px;margin-top:6px}
+  .vol-control input[type=range]{width:min(280px,70vw);height:4px;
+    -webkit-appearance:none;appearance:none;outline:none;border-radius:2px;
+    background:linear-gradient(90deg,#00e5ff 0%,#7a5cff 100%);
+    box-shadow:0 0 10px rgba(0,229,255,.5);cursor:pointer}
+  .vol-control input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+    width:20px;height:20px;border-radius:50%;background:#00e5ff;
+    box-shadow:0 0 14px #00e5ff;border:2px solid #fff;cursor:pointer}
+  .vol-control input[type=range]::-moz-range-thumb{width:18px;height:18px;
+    border-radius:50%;background:#00e5ff;box-shadow:0 0 14px #00e5ff;
+    border:2px solid #fff;cursor:pointer}
+  .vol-val{color:#ffd21e;font-weight:700;font-size:14px;letter-spacing:1px;
+    min-width:56px;text-align:center}
+  .ver{position:absolute;bottom:20px;left:0;right:0;text-align:center;
+    font-size:10px;letter-spacing:3px;color:#7a5cff;opacity:.7;pointer-events:none}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="flash"></div>
+<button id="btnPause" title="Пауза (P / Esc)">⏸</button>
 
 <div id="ui">
   <div id="top">
@@ -78,6 +109,7 @@
   </div>
 </div>
 
+<!-- МЕНЮ -->
 <div class="overlay" id="menu">
   <h1>NEON<span>RUNNER</span></h1>
   <div class="sub">БЕСКОНЕЧНЫЙ ЗАБЕГ</div>
@@ -85,16 +117,30 @@
     <div><b>← →</b> / <b>A D</b> — сменить полосу</div>
     <div><b>↑</b> / <b>W</b> / <b>ПРОБЕЛ</b> — прыжок</div>
     <div><b>↓</b> / <b>S</b> — перекат (в воздухе — быстрое падение)</div>
-    <div><b>B</b> — доска (нужно 100 монет)</div>
+    <div><b>B</b> — доска (100 монет) · <b>P</b> / <b>Esc</b> — пауза</div>
   </div>
-  <button id="btnStart">ИГРАТЬ</button>
+  <button class="main" id="btnStart">ИГРАТЬ</button>
+  <div class="ver" data-ver></div>
 </div>
 
+<!-- ПАУЗА -->
+<div class="overlay hide" id="pause">
+  <h1>ПАУ<span>ЗА</span></h1>
+  <div class="vol-control">
+    <label for="vol">ГРОМКОСТЬ</label>
+    <input type="range" id="vol" min="0" max="100" value="70">
+    <span class="vol-val" id="volVal">70%</span>
+  </div>
+  <button class="main" id="btnResume">ПРОДОЛЖИТЬ</button>
+  <div class="ver" data-ver></div>
+</div>
+
+<!-- КОНЕЦ -->
 <div class="overlay hide" id="over">
   <div class="sub">ЗАБЕГ ОКОНЧЕН</div>
   <div class="big" id="goScore">0</div>
   <div class="sub" id="goCoins">0 МОНЕТ</div>
-  <button id="btnRestart">ЕЩЁ РАЗ</button>
+  <button class="main" id="btnRestart">ЕЩЁ РАЗ</button>
 </div>
 
 <script type="importmap">
@@ -103,6 +149,16 @@
 
 <script type="module">
 import * as THREE from 'three';
+
+/* ═══════════════════════════════════════════════════════════════
+   ВЕРСИОНИРОВАНИЕ (semver: MAJOR.MINOR.PATCH)
+   • PATCH  x.x.N  — правки, фиксы
+   • MINOR  x.N.0  — новые фичи
+   • MAJOR  N.0.0  — крупные переработки
+   Обновляется автоматически с каждым релизом.
+   ═══════════════════════════════════════════════════════════════ */
+const VERSION = '1.1.0';
+document.querySelectorAll('[data-ver]').forEach(el => el.textContent = 'v' + VERSION);
 
 /* ═══════════════════════════════════════════════════════════════
    КОНСТАНТЫ
@@ -136,6 +192,92 @@ const randInt  = n => (rnd() * n) | 0;
 const clamp    = (v, a, b) => v < a ? a : v > b ? b : v;
 
 /* ═══════════════════════════════════════════════════════════════
+   ЗВУК (Web Audio — процедурные SFX, без внешних файлов)
+   ═══════════════════════════════════════════════════════════════ */
+let audioCtx  = null;
+let masterGain = null;
+let volume = 0.7;
+try {
+  const saved = localStorage.getItem('neon-runner-vol');
+  if (saved !== null) volume = clamp(parseFloat(saved), 0, 1);
+} catch {}
+
+function ensureAudio() {
+  if (!audioCtx) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audioCtx = new AC();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = volume;
+      masterGain.connect(audioCtx.destination);
+    } catch (e) { console.warn('Audio unavailable:', e); }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function beep(freq, dur, type = 'sine', vol = 0.2, slideTo = null) {
+  if (!audioCtx || !masterGain || volume < 0.005) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (slideTo !== null) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(masterGain);
+  o.start(t);
+  o.stop(t + dur + 0.02);
+}
+
+function noiseBurst(dur, vol = 0.2, freq = 1000) {
+  if (!audioCtx || !masterGain || volume < 0.005) return;
+  const t = audioCtx.currentTime;
+  const size = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+  const buf = audioCtx.createBuffer(1, size, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < size; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / size);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const f = audioCtx.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = freq;
+  f.Q.value = 1.4;
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f).connect(g).connect(masterGain);
+  src.start(t);
+  src.stop(t + dur + 0.02);
+}
+
+const SFX = {
+  jump()    { beep(320, 0.14, 'sine',     0.18, 760); },
+  roll()    { noiseBurst(0.18, 0.12, 520); },
+  coin()    { const p = 950 + Math.random() * 350; beep(p, 0.07, 'triangle', 0.15, p * 1.55); },
+  powerup() {
+    beep(520,  0.08, 'square', 0.14);
+    setTimeout(() => beep(780,  0.08, 'square', 0.14),  70);
+    setTimeout(() => beep(1100, 0.14, 'square', 0.16), 145);
+  },
+  board() {
+    beep(300, 0.1, 'sawtooth', 0.2, 900);
+    setTimeout(() => beep(950, 0.16, 'sine', 0.2, 1500), 85);
+  },
+  shield() {
+    noiseBurst(0.25, 0.25, 2600);
+    beep(1800, 0.14, 'triangle', 0.15, 600);
+  },
+  gameover() {
+    beep(520, 0.20, 'sawtooth', 0.25, 220);
+    setTimeout(() => beep(330, 0.30, 'sawtooth', 0.25, 90), 170);
+    setTimeout(() => beep(160, 0.50, 'sawtooth', 0.25, 60), 400);
+  },
+  click()   { beep(720, 0.06, 'square', 0.12); }
+};
+
+/* ═══════════════════════════════════════════════════════════════
    RENDERER / SCENE
    ═══════════════════════════════════════════════════════════════ */
 const canvas   = document.getElementById('c');
@@ -155,7 +297,7 @@ camera.position.set(0, 4.3, 9.5);
 camera.lookAt(0, 1.3, -11);
 
 /* ═══════════════════════════════════════════════════════════════
-   ЗЕМЛЯ (1 draw call, неоновая сетка в шейдере)
+   ЗЕМЛЯ
    ═══════════════════════════════════════════════════════════════ */
 const groundMat = new THREE.ShaderMaterial({
   uniforms: {
@@ -181,24 +323,19 @@ const groundMat = new THREE.ShaderMaterial({
     uniform float uFogFar;
     varying vec3  vW;
     varying float vD;
-
     void main(){
       vec2 p = vec2(vW.x, vW.z - uScroll);
       vec2 cs = p * 0.5;
       vec2 f  = abs(fract(cs) - 0.5);
       float db = 0.5 - min(f.x, f.y);
-
       float w = 0.022 + vD * 0.0011;
       float grid = 1.0 - smoothstep(0.0, w, db);
-
       float ax = abs(vW.x);
       float dl = min(abs(ax - 1.0), abs(ax - 3.0));
       float lane = 1.0 - smoothstep(0.0, 0.055 + vD * 0.0008, dl);
-
       vec3 col = vec3(0.42, 0.10, 1.00) * grid * 0.55;
       col += vec3(0.00, 0.85, 1.00) * lane * 1.15;
       col += vec3(0.10, 0.00, 0.25) * (1.0 - smoothstep(0.0, 12.0, abs(vW.x))) * 0.35;
-
       float fog = smoothstep(uFogNear, uFogFar, vD);
       col = mix(col, uFogColor, fog);
       gl_FragColor = vec4(col, 1.0);
@@ -215,9 +352,9 @@ scene.add(ground);
    ═══════════════════════════════════════════════════════════════ */
 const playerGroup = new THREE.Group();
 {
-  const boxGeo  = new THREE.BoxGeometry(0.8, 1, 0.8);
-  const body    = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-  const edges   = new THREE.LineSegments(
+  const boxGeo = new THREE.BoxGeometry(0.8, 1, 0.8);
+  const body   = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+  const edges  = new THREE.LineSegments(
     new THREE.EdgesGeometry(boxGeo),
     new THREE.LineBasicMaterial({ color: 0xffffff })
   );
@@ -225,7 +362,6 @@ const playerGroup = new THREE.Group();
 }
 scene.add(playerGroup);
 
-// «доска» (щит)
 const boardMesh = new THREE.Mesh(
   new THREE.BoxGeometry(1.05, 0.13, 1.75),
   new THREE.MeshBasicMaterial({ color: 0x00ffc8 })
@@ -234,7 +370,7 @@ boardMesh.visible = false;
 scene.add(boardMesh);
 
 /* ═══════════════════════════════════════════════════════════════
-   МОНЕТЫ (InstancedMesh)
+   МОНЕТЫ
    ═══════════════════════════════════════════════════════════════ */
 const coinGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.09, 8);
 coinGeo.rotateX(Math.PI / 2);
@@ -254,13 +390,12 @@ for (let i = 0; i < COIN_MAX; i++)
   coinsArr[i] = { active: false, x: 0, y: 0, z: 0, rot: 0 };
 
 /* ═══════════════════════════════════════════════════════════════
-   ПРЕПЯТСТВИЯ (3 InstancedMesh)
-   тип 0 — перекат (сверху), тип 1 — прыжок (снизу), тип 2 — обход
+   ПРЕПЯТСТВИЯ
    ═══════════════════════════════════════════════════════════════ */
 const OB_DEF = [
-  { w: 1.9, h: 1.5,  d: 0.6, cy: 1.90,  yMin: 1.15, yMax: 99 },  // ROLL
-  { w: 1.9, h: 0.85, d: 0.6, cy: 0.425, yMin: -1,   yMax: 0.85 },// JUMP
-  { w: 1.9, h: 3.0,  d: 0.6, cy: 1.50,  yMin: -1,   yMax: 99 }   // DODGE
+  { w: 1.9, h: 1.5,  d: 0.6, cy: 1.90,  yMin: 1.15, yMax: 99 },
+  { w: 1.9, h: 0.85, d: 0.6, cy: 0.425, yMin: -1,   yMax: 0.85 },
+  { w: 1.9, h: 3.0,  d: 0.6, cy: 1.50,  yMin: -1,   yMax: 99 }
 ];
 
 const OB_COLORS = [0xb026ff, 0x00e5ff, 0xff2255];
@@ -288,7 +423,7 @@ for (let t = 0; t < 3; t++) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   БОНУСЫ (InstancedMesh + instanceColor)
+   БОНУСЫ
    ═══════════════════════════════════════════════════════════════ */
 const puMesh = new THREE.InstancedMesh(
   new THREE.OctahedronGeometry(0.45, 0),
@@ -298,7 +433,6 @@ const puMesh = new THREE.InstancedMesh(
 puMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 puMesh.frustumCulled = false;
 puMesh.count = 0;
-
 const _white = new THREE.Color(0xffffff);
 for (let i = 0; i < PU_MAX; i++) puMesh.setColorAt(i, _white);
 scene.add(puMesh);
@@ -309,7 +443,7 @@ for (let i = 0; i < PU_MAX; i++)
   puArr[i] = { active: false, x: 0, y: 0, z: 0, rot: 0, kind: 0, color: new THREE.Color() };
 
 /* ═══════════════════════════════════════════════════════════════
-   СОСТОЯНИЕ ИГРЫ
+   СОСТОЯНИЕ
    ═══════════════════════════════════════════════════════════════ */
 let gameState = 'menu';
 
@@ -322,7 +456,7 @@ const player = {
 let score = 0, coins = 0, distance = 0, speed = BASE_SPEED;
 let magnetTimer = 0, x2Timer = 0, boardActive = false;
 let spawnAccum = 0, nextGap = 0;
-let boardFlash = 0;
+let coinSoundCooldown = 0;
 
 /* ═══════════════════════════════════════════════════════════════
    ПУЛЫ / СПАВН
@@ -381,42 +515,38 @@ function spawnPowerup(kind, lane, z) {
   }
 }
 
-/* ── паттерны ─────────────────────────────────────────────────── */
+/* ── паттерны (плотность повышена) ───────────────────────────── */
 function spawnPattern(z) {
   const r = rnd();
   let len = 0;
 
   if (r < 0.62) {
-    /* одиночное препятствие + дорожка монет ПОСЛЕ него */
     const lane = randInt(3);
     const tr = rnd();
     const type = tr < 0.34 ? 0 : (tr < 0.67 ? 1 : 2);
-
     spawnObstacle(type, lane, z);
 
     let coinLane = lane;
     if (type === 2) { do { coinLane = randInt(3); } while (coinLane === lane); }
 
-    const n = 4 + randInt(4);          // 4–7 монет (было 6–10)
-    const startZ = z - 11;             // короче «хвост» (было 13)
+    const n = 4 + randInt(4);
+    const startZ = z - 11;
     for (let i = 0; i < n; i++) spawnCoin(LANE_X[coinLane], 0.9, startZ - i * 2.4);
     len = 11 + (n - 1) * 2.4;
 
   } else if (r < 0.87) {
-    /* одинаковое препятствие на ВСЕХ трёх полосах + полоса монет */
     const type = rnd() < 0.5 ? 0 : 1;
     for (let l = 0; l < 3; l++) spawnObstacle(type, l, z);
 
-    const n = 3 + randInt(3);          // 3–5 монет на дорожку (было 5–8)
-    const startZ = z - 14;             // (было 17)
+    const n = 3 + randInt(3);
+    const startZ = z - 14;
     for (let l = 0; l < 3; l++)
       for (let i = 0; i < n; i++)
         spawnCoin(LANE_X[l], 0.9, startZ - i * 2.4);
     len = 14 + (n - 1) * 2.4;
 
   } else {
-    /* волна монет */
-    const n = 7 + randInt(6);          // 7–12 (было 10–17)
+    const n = 7 + randInt(6);
     for (let i = 0; i < n; i++) {
       const lane = clamp(Math.round(1 + Math.sin(i * 0.55) * 1.1), 0, 2);
       spawnCoin(LANE_X[lane], 0.9, z - i * 2.4);
@@ -447,14 +577,16 @@ function tryJump() {
     player.onGround = false;
     player.rolling = false;
     player.rollTimer = 0;
+    SFX.jump();
   }
 }
 
 function tryRoll() {
   if (gameState !== 'play') return;
-  if (!player.onGround) player.vy = Math.min(player.vy, -46);   // быстрое падение
+  if (!player.onGround) player.vy = Math.min(player.vy, -46);
   player.rolling = true;
   player.rollTimer = ROLL_TIME;
+  SFX.roll();
 }
 
 function tryBoard() {
@@ -462,17 +594,24 @@ function tryBoard() {
   if (coins >= BOARD_COST) {
     coins -= BOARD_COST;
     boardActive = true;
+    SFX.board();
   }
 }
 
 addEventListener('keydown', e => {
   switch (e.code) {
-    case 'ArrowLeft': case 'KeyA':  tryLane(-1); e.preventDefault(); break;
+    case 'ArrowLeft':  case 'KeyA': tryLane(-1); e.preventDefault(); break;
     case 'ArrowRight': case 'KeyD': tryLane(1);  e.preventDefault(); break;
     case 'ArrowUp': case 'KeyW': case 'Space': tryJump(); e.preventDefault(); break;
     case 'ArrowDown': case 'KeyS': tryRoll(); e.preventDefault(); break;
     case 'KeyB': tryBoard(); break;
-    case 'Enter': if (gameState !== 'play') startGame(); break;
+    case 'KeyP': case 'Escape':
+      if (gameState === 'play')   pauseGame();
+      else if (gameState === 'paused') resumeGame();
+      break;
+    case 'Enter':
+      if (gameState === 'menu' || gameState === 'over') startGame();
+      break;
   }
 });
 
@@ -505,12 +644,28 @@ const elTMagnet = document.getElementById('tMagnet');
 const elTX2     = document.getElementById('tX2');
 const elFlash   = document.getElementById('flash');
 const elMenu    = document.getElementById('menu');
+const elPause   = document.getElementById('pause');
 const elOver    = document.getElementById('over');
 const elGoScore = document.getElementById('goScore');
 const elGoCoins = document.getElementById('goCoins');
+const elBtnPause  = document.getElementById('btnPause');
+const elVol       = document.getElementById('vol');
+const elVolVal    = document.getElementById('volVal');
+
+/* инициализация ползунка громкости */
+elVol.value = Math.round(volume * 100);
+elVolVal.textContent = Math.round(volume * 100) + '%';
+
+elVol.addEventListener('input', e => {
+  volume = clamp(e.target.value / 100, 0, 1);
+  elVolVal.textContent = Math.round(volume * 100) + '%';
+  if (masterGain && audioCtx) {
+    masterGain.gain.setTargetAtTime(volume, audioCtx.currentTime, 0.01);
+  }
+  try { localStorage.setItem('neon-runner-vol', volume); } catch {}
+});
 
 let hudTimer = 0;
-
 function updateHUD(dt) {
   hudTimer += dt;
   if (hudTimer < 0.07) return;
@@ -534,6 +689,34 @@ function updateHUD(dt) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   ПАУЗА
+   ═══════════════════════════════════════════════════════════════ */
+function pauseGame() {
+  if (gameState !== 'play') return;
+  gameState = 'paused';
+  elPause.classList.remove('hide');
+  elBtnPause.style.display = 'none';
+  SFX.click();
+}
+
+function resumeGame() {
+  if (gameState !== 'paused') return;
+  gameState = 'play';
+  elPause.classList.add('hide');
+  elBtnPause.style.display = 'flex';
+  lastTime = performance.now();
+  SFX.click();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+elBtnPause.addEventListener('click', pauseGame);
+document.getElementById('btnResume').addEventListener('click', resumeGame);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && gameState === 'play') pauseGame();
+});
+
+/* ═══════════════════════════════════════════════════════════════
    СТАРТ / РЕСТАРТ / КОНЕЦ
    ═══════════════════════════════════════════════════════════════ */
 function resetGame() {
@@ -548,18 +731,22 @@ function resetGame() {
 
   score = 0; coins = 0; distance = 0; speed = BASE_SPEED;
   magnetTimer = 0; x2Timer = 0; boardActive = false;
-  spawnAccum = 0; nextGap = 0; boardFlash = 0;
+  spawnAccum = 0; nextGap = 0; coinSoundCooldown = 0;
 
   groundMat.uniforms.uScroll.value = 0;
 
   elOver.classList.add('hide');
   elMenu.classList.add('hide');
+  elPause.classList.add('hide');
   boardMesh.visible = false;
 }
 
 function startGame() {
+  ensureAudio();
+  SFX.click();
   resetGame();
   gameState = 'play';
+  elBtnPause.style.display = 'flex';
   lastTime = performance.now();
 }
 
@@ -568,9 +755,11 @@ function gameOver() {
   elGoScore.textContent = Math.floor(score).toLocaleString('ru-RU');
   elGoCoins.textContent = coins + ' МОНЕТ';
   elOver.classList.remove('hide');
+  elBtnPause.style.display = 'none';
   elBoard.classList.remove('on');
   elMagnet.classList.remove('on');
   elX2.classList.remove('on');
+  SFX.gameover();
 }
 
 document.getElementById('btnStart').addEventListener('click', startGame);
@@ -583,7 +772,6 @@ function onHit() {
   if (boardActive) {
     boardActive = false;
     boardMesh.visible = false;
-    boardFlash = 1;
     elFlash.style.transition = 'none';
     elFlash.style.opacity = '0.55';
     requestAnimationFrame(() => {
@@ -595,26 +783,24 @@ function onHit() {
       for (let i = 0; i < OB_PER_TYPE; i++)
         if (p[i].active && Math.abs(p[i].z) < 2.2) p[i].active = false;
     }
+    SFX.shield();
     return;
   }
   gameOver();
 }
 
 function update(dt) {
-  /* ── скорость / дистанция ── */
   speed = Math.min(BASE_SPEED + distance * 0.0125, MAX_SPEED);
   const move = speed * dt;
   distance += move;
   groundMat.uniforms.uScroll.value += move;
 
-  /* ── очки за время ── */
   score += SCORE_PER_SEC * dt * (x2Timer > 0 ? 2 : 1);
-
-  /* ── таймеры бонусов ── */
   if (magnetTimer > 0) magnetTimer -= dt;
   if (x2Timer > 0)     x2Timer -= dt;
+  if (coinSoundCooldown > 0) coinSoundCooldown -= dt;
 
-  /* ═══ ИГРОК ═══ */
+  /* ── игрок ── */
   const targetX = LANE_X[player.lane];
   player.x += (targetX - player.x) * (1 - Math.exp(-17 * dt));
 
@@ -634,40 +820,34 @@ function update(dt) {
   const pBottom = player.y;
   const pCenterY = player.y + player.h * 0.5;
 
-  /* ═══ ПРЕПЯТСТВИЯ ═══ */
+  /* ── препятствия ── */
   for (let t = 0; t < 3; t++) {
     const def  = OB_DEF[t];
     const pool = obPools[t];
-
     for (let i = 0; i < OB_PER_TYPE; i++) {
       const o = pool[i];
       if (!o.active) continue;
-
       o.z += move;
       if (o.z > DESPAWN_Z) { o.active = false; continue; }
-
-      /* коллизия: z-окно 2.0 > макс. шага (56/30 = 1.87) — туннелирование исключено */
       if (o.z < -1.0 || o.z > 1.0) continue;
       if (Math.abs(o.x - player.x) > 1.15) continue;
 
       let hit = false;
-      if (t === 0)      hit = pTop > def.yMin;       // перекат
-      else if (t === 1) hit = pBottom < def.yMax;    // прыжок
-      else              hit = true;                  // обход
+      if (t === 0)      hit = pTop > def.yMin;
+      else if (t === 1) hit = pBottom < def.yMax;
+      else              hit = true;
 
       if (hit) { o.active = false; onHit(); return; }
     }
   }
 
-  /* ═══ МОНЕТЫ ═══ */
+  /* ── монеты ── */
   const magnetOn = magnetTimer > 0;
   for (let i = 0; i < COIN_MAX; i++) {
     const c = coinsArr[i];
     if (!c.active) continue;
-
     c.z += move;
     c.rot += dt * 5.5;
-
     if (c.z > DESPAWN_Z) { c.active = false; continue; }
 
     if (magnetOn) {
@@ -690,18 +870,20 @@ function update(dt) {
       c.active = false;
       coins++;
       score += COIN_SCORE * (x2Timer > 0 ? 2 : 1);
+      if (coinSoundCooldown <= 0) {
+        SFX.coin();
+        coinSoundCooldown = 0.09;
+      }
     }
   }
 
-  /* ═══ БОНУСЫ ═══ */
+  /* ── бонусы ── */
   for (let i = 0; i < PU_MAX; i++) {
     const u = puArr[i];
     if (!u.active) continue;
-
     u.z += move;
     u.rot += dt * 3;
     u.y = 1.1 + Math.sin(u.rot * 2) * 0.15;
-
     if (u.z > DESPAWN_Z) { u.active = false; continue; }
 
     if (u.z > -1.4 && u.z < 1.4 &&
@@ -710,19 +892,19 @@ function update(dt) {
       u.active = false;
       if (u.kind === 0) magnetTimer = MAGNET_TIME;
       else              x2Timer = X2_TIME;
+      SFX.powerup();
     }
   }
 
-  /* ═══ СПАВН ПАТТЕРНОВ ═══ */
+  /* ── спавн ── */
   spawnAccum += move;
   if (spawnAccum >= nextGap) {
     spawnAccum = 0;
     const len = spawnPattern(SPAWN_Z);
-    /* ПЛОТНОСТЬ: было len + 26 + speed*0.35 → стало len + 8 + speed*0.1 */
-    nextGap = len + 8 + speed * 0.1;
+    nextGap = len + 8 + speed * 0.1;    // высокая плотность
   }
 
-  /* ═══ ВИЗУАЛ ИГРОКА ═══ */
+  /* ── визуал игрока ── */
   const sx = 1 + (1 - player.h / STAND_H) * 0.45;
   playerGroup.position.set(player.x, player.y + player.h * 0.5, 0);
   playerGroup.scale.set(sx, player.h, sx);
@@ -742,7 +924,6 @@ function update(dt) {
 const _m4 = new THREE.Matrix4();
 
 function renderInstances() {
-  /* монеты */
   let n = 0;
   for (let i = 0; i < COIN_MAX; i++) {
     const c = coinsArr[i];
@@ -754,7 +935,6 @@ function renderInstances() {
   coinMesh.count = n;
   if (n) coinMesh.instanceMatrix.needsUpdate = true;
 
-  /* препятствия */
   for (let t = 0; t < 3; t++) {
     const def  = OB_DEF[t];
     const pool = obPools[t];
@@ -771,7 +951,6 @@ function renderInstances() {
     if (k) mesh.instanceMatrix.needsUpdate = true;
   }
 
-  /* бонусы */
   let p = 0;
   for (let i = 0; i < PU_MAX; i++) {
     const u = puArr[i];
@@ -793,7 +972,7 @@ function renderInstances() {
    ГЛАВНЫЙ ЦИКЛ
    ═══════════════════════════════════════════════════════════════ */
 let lastTime = performance.now();
-const MAX_DT = 1 / 30;          // защита от туннелирования и лагов
+const MAX_DT = 1 / 30;
 
 function loop(now) {
   requestAnimationFrame(loop);
@@ -805,11 +984,14 @@ function loop(now) {
 
   if (gameState === 'play') {
     update(dt);
-  } else {
-    /* медленная прокрутка земли в меню */
+  } else if (gameState === 'menu') {
     groundMat.uniforms.uScroll.value += dt * 9;
-    boardMesh.visible = false;
     playerGroup.position.set(player.x, player.y + player.h * 0.5, 0);
+  } else if (gameState === 'over') {
+    groundMat.uniforms.uScroll.value += dt * 1.5;
+    boardMesh.visible = false;
+  } else if (gameState === 'paused') {
+    boardMesh.visible = boardActive;
   }
 
   renderInstances();
