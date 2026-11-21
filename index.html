@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>NEON RUNNER v1.2.0</title>
+<title>NEON RUNNER v1.2.2</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{width:100%;height:100%;overflow:hidden;background:#05010f;
     font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
     -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
-    touch-action:none} /* Отключаем скролл и зум страницы */
+    touch-action:none}
 
   #c{display:block;width:100%;height:100%;touch-action:none}
 
@@ -24,9 +24,12 @@
   #scoreBox small{display:block;font-size:9px;letter-spacing:3px;opacity:.55;margin-top:4px}
   #coinBox{color:#ffd21e;font-size:clamp(16px,3.6vw,26px);font-weight:700;text-align:right;line-height:1}
   #coinBox small{display:block;font-size:9px;letter-spacing:3px;opacity:.55;margin-top:4px}
+  
+  /* Визуальный индикатор готовности доски */
   #boardTag{color:#00ffc8;font-size:11px;letter-spacing:2px;margin-top:8px;text-align:right;
-    opacity:0;transition:opacity .2s}
-  #boardTag.on{opacity:1;animation:pulse 1s infinite}
+    opacity:0;transition:opacity .2s;pointer-events:none;
+    padding:6px 10px;border-radius:6px;border:1px solid transparent}
+  #boardTag.on{opacity:1;animation:pulse 1s infinite;border-color:#00ffc8;background:rgba(0,255,200,.1)}
   @keyframes pulse{50%{opacity:.35}}
 
   #bottom{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
@@ -40,7 +43,6 @@
   #flash{position:fixed;inset:0;pointer-events:none;background:#00ffc8;opacity:0;
     mix-blend-mode:screen;transition:opacity .35s}
 
-  /* ── кнопка паузы ── */
   #btnPause{position:fixed;top:max(14px, env(safe-area-inset-top));left:50%;transform:translateX(-50%);
     width:44px;height:44px;border-radius:50%;
     background:rgba(0,229,255,.08);border:1px solid #00e5ff;color:#00e5ff;
@@ -51,7 +53,6 @@
   #btnPause:hover{background:rgba(0,229,255,.2);box-shadow:0 0 24px rgba(0,229,255,.8)}
   #btnPause:active{transform:translateX(-50%) scale(.94)}
 
-  /* ── оверлеи и карточки ── */
   .overlay{position:fixed;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;padding:20px;text-align:center;
     background:rgba(5,1,15,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -62,22 +63,27 @@
     background:rgba(15, 5, 30, 0.6);
     border:1px solid rgba(0, 229, 255, 0.25);
     border-radius:24px;
-    padding:32px 24px;
+    padding:26px 20px;
     box-shadow:0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.05);
-    display:flex;flex-direction:column;align-items:center;gap:20px;
-    max-width:380px;width:100%;position:relative;
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    max-width:420px;width:100%;position:relative;
   }
 
-  h1{font-size:clamp(28px,9vw,48px);letter-spacing:4px;font-weight:800;
+  h1{font-size:clamp(26px,8vw,44px);letter-spacing:4px;font-weight:800;
      color:#00e5ff;text-shadow:0 0 12px #00e5ff,0 0 46px #0088ff;line-height:1.1;white-space:nowrap}
   h1 span{color:#ff2fb0;text-shadow:0 0 12px #ff2fb0,0 0 46px #a0006e}
   .sub{font-size:11px;letter-spacing:4px;color:#7a5cff;opacity:.8}
-  .keys{font-size:11px;line-height:1.8;color:#b9a8ff;letter-spacing:1px;opacity:.85;text-align:left;margin:10px 0}
-  .keys b{color:#00e5ff}
+  
+  .controls-section{display:flex;flex-direction:column;gap:14px;width:100%;margin:8px 0}
+  .control-group{display:flex;flex-direction:column;gap:4px;text-align:left;background:rgba(255,255,255,.03);padding:10px 14px;border-radius:12px}
+  .ctrl-title{font-size:10px;letter-spacing:2px;color:#00e5ff;opacity:.7;margin-bottom:4px}
+  .keys{font-size:11px;line-height:1.6;color:#b9a8ff;letter-spacing:1px}
+  .keys b{color:#fff;font-weight:700}
+  
   .big{font-size:clamp(32px,10vw,64px);color:#ffd21e;font-weight:800;
        text-shadow:0 0 14px #ffd21e,0 0 40px #a06a00;line-height:1}
 
-  .btn-group{display:flex;flex-direction:column;gap:12px;width:100%;margin-top:10px}
+  .btn-group{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:8px}
   button.main{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:700;
     letter-spacing:2px;font-size:14px;padding:16px 20px;border-radius:16px;
     color:#05010f;background:linear-gradient(90deg,#00e5ff,#7a5cff);
@@ -88,7 +94,6 @@
   button.secondary{background:transparent;border:1px solid rgba(122,92,255,.6);color:#b9a8ff;box-shadow:none}
   button.secondary:active{background:rgba(122,92,255,.15)}
 
-  /* ── громкость ── */
   .vol-control{display:flex;flex-direction:column;gap:12px;align-items:center;
     pointer-events:auto;color:#00e5ff;font-size:11px;letter-spacing:3px;width:100%}
   .vol-control input[type=range]{width:100%;height:6px;
@@ -103,7 +108,7 @@
     border:3px solid #fff;cursor:pointer}
   .vol-val{color:#ffd21e;font-weight:700;font-size:14px;letter-spacing:1px;
     min-width:56px;text-align:center}
-  .ver{position:absolute;bottom:20px;left:0;right:0;text-align:center;
+  .ver{position:absolute;bottom:16px;left:0;right:0;text-align:center;
     font-size:10px;letter-spacing:3px;color:#7a5cff;opacity:.5;pointer-events:none}
 </style>
 </head>
@@ -131,12 +136,29 @@
   <div class="menu-card">
     <h1>NEON<span>RUNNER</span></h1>
     <div class="sub">БЕСКОНЕЧНЫЙ ЗАБЕГ</div>
-    <div class="keys">
-      <div><b>Свайп</b> влево/вправо — полоса</div>
-      <div><b>Тап</b> или <b>Свайп вверх</b> — прыжок</div>
-      <div><b>Свайп вниз</b> — перекат</div>
-      <div><b>Кнопка ⏸</b> / <b>P</b> — пауза</div>
+    
+    <div class="controls-section">
+      <div class="control-group">
+        <div class="ctrl-title">💻 ПК (КЛАВИАТУРА)</div>
+        <div class="keys">
+          <div><b>← →</b> / <b>A D</b> — смена полосы</div>
+          <div><b>↑ / W / Пробел</b> — прыжок</div>
+          <div><b>↓ / S</b> — перекат (в воздухе — падение)</div>
+          <div><b>B</b> — доска · <b>P / Esc</b> — пауза</div>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <div class="ctrl-title">📱 ТЕЛЕФОН (СЕНСОР)</div>
+        <div class="keys">
+          <div><b>Свайп ← →</b> — смена полосы</div>
+          <div><b>Тап</b> или <b>Свайп ↑</b> — прыжок</div>
+          <div><b>Свайп ↓</b> — перекат</div>
+          <div><b>Двойной тап</b> — активация доски</div>
+        </div>
+      </div>
     </div>
+
     <div class="btn-group">
       <button class="main" id="btnStart">ИГРАТЬ</button>
     </div>
@@ -180,10 +202,7 @@
 <script type="module">
 import * as THREE from 'three';
 
-/* ═══════════════════════════════════════════════════════════════
-   ВЕРСИОНИРОВАНИЕ (semver: MAJOR.MINOR.PATCH)
-   ═══════════════════════════════════════════════════════════════ */
-const VERSION = '1.2.0';
+const VERSION = '1.2.2';
 document.querySelectorAll('[data-ver]').forEach(el => el.textContent = 'v' + VERSION);
 
 /* ═══════════════════════════════════════════════════════════════
@@ -642,16 +661,14 @@ addEventListener('keydown', e => {
 
 /* ── ТАЧ-УПРАВЛЕНИЕ НА ВЕСЬ ЭКРАН ── */
 let tsX = 0, tsY = 0;
+let lastTapTime = 0;
 
-// Блокируем скролл и зум при игре
 document.addEventListener('touchmove', e => {
   if (gameState === 'play') e.preventDefault();
 }, { passive: false });
 
-// Слушаем весь экран, а не только canvas
 window.addEventListener('touchstart', e => {
   if (gameState !== 'play') return;
-  // Игнорируем тапы по кнопкам UI (например, кнопка паузы)
   if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
   const t = e.changedTouches[0];
   tsX = t.clientX; tsY = t.clientY;
@@ -665,23 +682,34 @@ window.addEventListener('touchend', e => {
   const dx = t.clientX - tsX, dy = t.clientY - tsY;
   const adx = Math.abs(dx), ady = Math.abs(dy);
 
-  // Короткий тап — прыжок
+  // Определяем, был ли это тап (а не свайп)
   if (Math.max(adx, ady) < 30) { 
-    tryJump(); 
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // 300 мс на двойной тап
+
+    if (now - lastTapTime < DOUBLE_TAP_DELAY) {
+      // Двойной тап — активация доски
+      tryBoard();
+      lastTapTime = 0; // сбрасываем, чтобы не сработало тройное нажатие
+    } else {
+      // Одиночный тап — прыжок
+      tryJump();
+      lastTapTime = now;
+    }
     return; 
   }
   
-  // Свайпы
+  // Обработка свайпов
   if (adx > ady) {
     tryLane(dx > 0 ? 1 : -1);
   } else {
     if (dy > 0) tryRoll();
-    else tryJump(); // Свайп вверх тоже прыжок
+    else tryJump();
   }
 }, { passive: true });
 
 /* ═══════════════════════════════════════════════════════════════
-   HUD
+   HUD И UI
    ═══════════════════════════════════════════════════════════════ */
 const elScore   = document.getElementById('score');
 const elCoins   = document.getElementById('coins');
@@ -790,6 +818,7 @@ function resetGame() {
   score = 0; coins = 0; distance = 0; speed = BASE_SPEED;
   magnetTimer = 0; x2Timer = 0; boardActive = false;
   spawnAccum = 0; nextGap = 0; coinSoundCooldown = 0;
+  lastTapTime = 0;
 
   groundMat.uniforms.uScroll.value = 0;
 
